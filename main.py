@@ -2,6 +2,8 @@ import streamlit as st
 from pages.login_register.login import login_ui 
 from pages.login_register.register import register_ui
 
+st.set_page_config(page_title="IoT", layout="wide")
+
 # Initialize Session State for necessary variables
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -17,7 +19,7 @@ pages = [st.Page("pages/live_cam/live_cam.py", title="Live cam"),
          st.Page("pages/chatbot/chatbot.py", title="Chatbot")]
 
 # If logged in, show navigation; else show login/register
-if not st.session_state.logged_in:
+if st.session_state.logged_in:
     nav = st.navigation(pages)
     nav.run()
 else:

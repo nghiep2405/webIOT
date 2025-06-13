@@ -1,5 +1,8 @@
 import streamlit.components.v1 as components
 import streamlit as st
+# 
+st.title("🤖 Chatbot"
+         , help="Chat with our AI assistant to get answers to your questions or help with tasks.")
 
 components.html(
         """
@@ -37,6 +40,6 @@ components.html(
         })();
         </script>
         """,
-        height=700,
+        height=670,
         width=600
     )
