@@ -48,4 +48,4 @@ def login_user(name: str, password: str):
     if user:
         return {"message": "Login successful", "uid": user.id}
     else:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid credentials")    
