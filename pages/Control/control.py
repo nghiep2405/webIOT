@@ -2,13 +2,13 @@ import streamlit as st
 
 st.title("Control Panel")
 
-tab1, tab2, tab3 = st.tabs(["🔴 LED Control", "🔔 Buzzer Control", "🔒 Security Control"])
+tab1, tab2, tab3 = st.tabs(["🔴 LED Control", "🔔 Sound Control", "🔒 Security Control"])
 
 with tab1:
     exec(open("pages/Control/led_control.py",  encoding="utf-8").read())
 
 with tab2:
-    exec(open("pages/Control/buzzer.py",  encoding="utf-8").read())
+    exec(open("pages/Control/sound.py",  encoding="utf-8").read())
 
 with tab3:
     exec(open("pages/Control/security.py",  encoding="utf-8").read())
