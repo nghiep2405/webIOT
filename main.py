@@ -11,10 +11,13 @@ if "page" not in st.session_state:
     st.session_state.page = "login"
 
 # Define page navigation
-pages = [st.Page("pages/live_cam/live_cam.py", title="Live cam"),
-         st.Page("pages/control/control.py", title="Control"),
-         st.Page("pages/statistic/statistic.py", title="Statistic"),
-         st.Page("pages/chatbot/chatbot.py", title="Chatbot")]
+pages = [
+    st.Page("pages/overview/overview.py", title="Overview"),
+    st.Page("pages/live_cam/live_cam.py", title="Live cam"),
+    st.Page("pages/control/control.py", title="Control"),
+    st.Page("pages/statistic/statistic.py", title="Statistic"),
+    st.Page("pages/chatbot/chatbot.py", title="Chatbot")
+]
 
 # If logged in, show navigation; else show login/register
 if not st.session_state.logged_in:
