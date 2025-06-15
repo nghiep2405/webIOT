@@ -30,7 +30,6 @@ except Exception as e:
 class SoundHistoryRequest(BaseModel):
     user_name: str
     sound_name: str
-    sound_index: int
 
 @app.post("/register")
 def register_user(name: str, password: str):
@@ -67,18 +66,19 @@ def save_sound_history(request: SoundHistoryRequest):
         history_data = {
             "user_name": request.user_name,
             "sound_name": request.sound_name,
-            "sound_index": request.sound_index,
             "timestamp": timestamp,
-            "date_string": timestamp.strftime("%d/%m/%Y %H:%M:%S")
         }
         
         # Lưu vào collection "sound_history"
         doc_ref = db.collection("sound_history").add(history_data)
         
+        # Format timestamp cho response
+        formatted_time = timestamp.strftime("%d/%m/%Y %H:%M:%S")
+        
         return {
             "message": "Sound history saved successfully", 
             "doc_id": doc_ref[1].id,
-            "timestamp": history_data["date_string"]
+            "timestamp": formatted_time
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving sound history: {str(e)}")
@@ -93,13 +93,14 @@ def get_sound_history():
         history_list = []
         for doc in docs:
             data = doc.to_dict()
+            # Format timestamp khi cần thiết
+            raw_timestamp = data.get("timestamp")
+            formatted_time = raw_timestamp.strftime("%d/%m/%Y %H:%M:%S") if raw_timestamp else ""
             history_list.append({
                 "id": doc.id,
                 "user_name": data.get("user_name", ""),
                 "sound_name": data.get("sound_name", ""),
-                "sound_index": data.get("sound_index", 0),
-                "timestamp": data.get("date_string", ""),
-                "raw_timestamp": data.get("timestamp")
+                "timestamp": formatted_time,  # Hiển thị format
             })
         
         return {"history": history_list}

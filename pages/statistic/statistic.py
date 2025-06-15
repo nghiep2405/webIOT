@@ -29,7 +29,7 @@ def display_sound_history():
     with tab1:
         history_data = get_sound_history()
         if history_data:
-            # Tạo DataFrame để hiển thị đẹp hơn
+            # Tạo DataFrame
             df = pd.DataFrame(history_data)
             
             # Hiển thị thống kê tổng quan
@@ -44,12 +44,40 @@ def display_sound_history():
                     most_used = df['sound_name'].value_counts().index[0]
                     st.metric("Âm Thanh Phổ Biến", most_used)
             
-            # Hiển thị bảng lịch sử
+            # Hiển thị bảng lịch sử với sorting options
             st.write("**Chi Tiết Lịch Sử:**")
+            
+            # Thêm options để sort
+            col_sort, col_order = st.columns([2, 1])
+            with col_sort:
+                sort_column = st.selectbox(
+                    "Sắp xếp theo:",
+                    ["Mặc định", "Tài Khoản", "Bản Ghi Âm", "Thời Gian"],
+                    key="sort_column_all"
+                )
+            with col_order:
+                sort_ascending = st.selectbox(
+                    "Thứ tự:",
+                    ["Tăng dần", "Giảm dần"],
+                    key="sort_order_all"
+                ) == "Tăng dần"
+            
+            # Chuẩn bị DataFrame để hiển thị
             display_df = df[['user_name', 'sound_name', 'timestamp']].copy()
             display_df.columns = ['Tài Khoản', 'Bản Ghi Âm', 'Thời Gian']
             
-            # Thêm cột STT bắt đầu từ 1
+            # Thực hiện sort trên toàn bộ dữ liệu trước khi phân trang
+            if sort_column != "Mặc định":
+                if sort_column == "Thời Gian":
+                    # Convert timestamp to datetime for proper sorting
+                    display_df['Thời Gian'] = pd.to_datetime(display_df['Thời Gian'])
+                
+                display_df = display_df.sort_values(
+                    by=sort_column, 
+                    ascending=sort_ascending
+                )
+            
+            # Reset index sau khi sort
             display_df.reset_index(drop=True, inplace=True)
             display_df.index = display_df.index + 1
             display_df.index.name = 'STT'
@@ -66,6 +94,11 @@ def display_sound_history():
                 
                 # Hiển thị với index bắt đầu từ số thứ tự thực tế
                 page_df = display_df.iloc[start_idx:end_idx].copy()
+                
+                # Adjust index to show correct row numbers for current page
+                page_df.index = range(start_idx + 1, min(end_idx + 1, total_items + 1))
+                page_df.index.name = 'STT'
+                
                 st.dataframe(page_df, use_container_width=True)
                 st.write(f"Hiển thị {start_idx + 1}-{min(end_idx, total_items)} của {total_items} bản ghi")
             else:
@@ -84,8 +117,34 @@ def display_sound_history():
                 user_history = [record for record in all_history if record['user_name'] == selected_user]
                 if user_history:
                     df_user = pd.DataFrame(user_history)
+                    
+                    # Thêm sorting cho tab user
+                    col_sort_user, col_order_user = st.columns([2, 1])
+                    with col_sort_user:
+                        sort_column_user = st.selectbox(
+                            "Sắp xếp theo:",
+                            ["Mặc định", "Bản Ghi Âm", "Thời Gian"],
+                            key="sort_column_user"
+                        )
+                    with col_order_user:
+                        sort_ascending_user = st.selectbox(
+                            "Thứ tự:",
+                            ["Tăng dần", "Giảm dần"],
+                            key="sort_order_user"
+                        ) == "Tăng dần"
+                    
                     display_df_user = df_user[['sound_name', 'timestamp']].copy()
                     display_df_user.columns = ['Bản Ghi Âm', 'Thời Gian']
+                    
+                    # Sort if needed
+                    if sort_column_user != "Mặc định":
+                        if sort_column_user == "Thời Gian":
+                            display_df_user['Thời Gian'] = pd.to_datetime(display_df_user['Thời Gian'])
+                        
+                        display_df_user = display_df_user.sort_values(
+                            by=sort_column_user, 
+                            ascending=sort_ascending_user
+                        )
                     
                     # Thêm cột STT bắt đầu từ 1
                     display_df_user.reset_index(drop=True, inplace=True)
@@ -122,8 +181,34 @@ def display_sound_history():
                 sound_history = [record for record in all_history if record['sound_name'] == selected_sound]
                 if sound_history:
                     df_sound = pd.DataFrame(sound_history)
+                    
+                    # Thêm sorting cho tab sound
+                    col_sort_sound, col_order_sound = st.columns([2, 1])
+                    with col_sort_sound:
+                        sort_column_sound = st.selectbox(
+                            "Sắp xếp theo:",
+                            ["Mặc định", "Tài Khoản", "Thời Gian"],
+                            key="sort_column_sound"
+                        )
+                    with col_order_sound:
+                        sort_ascending_sound = st.selectbox(
+                            "Thứ tự:",
+                            ["Tăng dần", "Giảm dần"],
+                            key="sort_order_sound"
+                        ) == "Tăng dần"
+                    
                     display_df_sound = df_sound[['user_name', 'timestamp']].copy()
                     display_df_sound.columns = ['Tài Khoản', 'Thời Gian']
+                    
+                    # Sort if needed
+                    if sort_column_sound != "Mặc định":
+                        if sort_column_sound == "Thời Gian":
+                            display_df_sound['Thời Gian'] = pd.to_datetime(display_df_sound['Thời Gian'])
+                        
+                        display_df_sound = display_df_sound.sort_values(
+                            by=sort_column_sound, 
+                            ascending=sort_ascending_sound
+                        )
                     
                     # Thêm cột STT bắt đầu từ 1
                     display_df_sound.reset_index(drop=True, inplace=True)
@@ -156,7 +241,7 @@ def display_sound_history():
                 st.info("Vui lòng chọn một bản ghi âm cụ thể để xem thống kê.")
         else:
             st.info("Chưa có dữ liệu lịch sử để lọc.")
-
+            
 # Phần biểu đồ cũ (có thể giữ lại hoặc bỏ tùy ý)
 def display_old_charts():
     st.header("📈 Biểu Đồ Mẫu")
@@ -180,8 +265,8 @@ def display_old_charts():
     df = pd.DataFrame(data)
     
     tab2.bar_chart(data, x="Ngày", stack=False)
-    
- # Hiển thị thống kê âm thanh
+
+# Hiển thị thống kê âm thanh
 display_sound_history()
     
 st.divider()

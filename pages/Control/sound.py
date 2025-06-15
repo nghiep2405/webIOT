@@ -20,15 +20,14 @@ def load_playlist():
         st.error(f"Error reading playlist.txt: {e}")
         return []
 
-def save_sound_history(user_name, sound_name, sound_index):
+def save_sound_history(user_name, sound_name):
     """Lưu lịch sử sử dụng âm thanh vào database"""
     try:
         response = requests.post(
             f"{API_BASE_URL}/save-sound-history",
             json={
                 "user_name": user_name,
-                "sound_name": sound_name,
-                "sound_index": sound_index
+                "sound_name": sound_name
             }
         )
         if response.status_code == 200:
@@ -53,6 +52,7 @@ def sound_controlUI():
     if not user_name:
         st.error("Không thể xác định tài khoản người dùng!")
         return
+    
     st.write(f"Chào mừng, {user_name}! Bạn có thể chọn bản ghi âm để phát.")
 
     audio_files = load_playlist()
@@ -65,7 +65,7 @@ def sound_controlUI():
                         # Publish the file index to MQTT broker
                         mqtt_client.publish(MQTT_SONG_TOPIC, str(idx), qos=1)
                         # Lưu lịch sử sử dụng
-                        success, timestamp = save_sound_history(user_name, display_name, idx)
+                        success, timestamp = save_sound_history(user_name, display_name)
                         st.success(f"Đang gửi lệnh phát {file}")  
                         if success:
                             st.success(f"✅ Đang phát: {display_name}")
