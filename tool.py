@@ -106,26 +106,3 @@ def get_sound_history():
         return {"history": history_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting sound history: {str(e)}")
-
-@app.get("/get-user-sound-history/{user_name}")
-def get_user_sound_history(user_name: str):
-    try:
-        # Lấy lịch sử của một user cụ thể
-        history_ref = db.collection("sound_history").where("user_name", "==", user_name).order_by("timestamp", direction=firestore.Query.DESCENDING)
-        docs = history_ref.stream()
-        
-        history_list = []
-        for doc in docs:
-            data = doc.to_dict()
-            history_list.append({
-                "id": doc.id,
-                "user_name": data.get("user_name", ""),
-                "sound_name": data.get("sound_name", ""),
-                "sound_index": data.get("sound_index", 0),
-                "timestamp": data.get("date_string", ""),
-                "raw_timestamp": data.get("timestamp")
-            })
-        
-        return {"history": history_list, "user_name": user_name}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting user sound history: {str(e)}")  
