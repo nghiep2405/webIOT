@@ -62,9 +62,7 @@ if st.session_state.logged_in:
             nav.run()
     with right:
         bot1, bot2 = st.columns([1,20], vertical_alignment="bottom")
-        bot1.container(height=820, border=False)
-        # container = st.container(height=800, border=True)
-        # col = st.columns(1, vertical_alignment="center")[0]
+        bot1.container(height=700, border=False)
         if bot2.button("",icon=":material/support_agent:", use_container_width=True, type="primary", key="no_style"):
             chat()
 else:
