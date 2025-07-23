@@ -16,3 +16,4 @@ def register_ui():
 
     if st.button("Quay lại đăng nhập"):
         st.session_state.page = "login"
+        st.rerun()

@@ -20,6 +20,7 @@ def login_ui():
                 st.session_state.user_name = name
                 st.session_state.page = "main"
                 st.success("Login successful!")
+                st.rerun()
             else:
                 st.error("Login failed")
 
@@ -40,3 +41,4 @@ def login_ui():
 
     if st.button("Chưa có tài khoản? Đăng ký"):
         st.session_state.page = "register"
+        st.rerun()

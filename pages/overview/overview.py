@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 
 def overview_ui():
     st.title("Overview")
@@ -8,5 +9,7 @@ This is the final project of Group 5, consisting of members Nguyễn Anh Khoa, N
 Our product simulates a smart IoT model for store functionalities, integrating various devices with the website and the Firebase cloud platform. This connection allows us to incorporate AI into the application.
 
 This final project applies knowledge learned in class about hardware devices, Arduino, and combines it with external knowledge and skills.""")
+    res = requests.get("http://localhost:8000/get-info-customers")
+    st.write(res.json() )
 
 overview_ui()
