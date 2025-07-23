@@ -30,17 +30,6 @@ def login_ui():
         if st.button("Log in with Google"):
             st.login("google")
             st.json(st.user)
-
-    # # Nếu đã đăng nhập bằng Google
-    # if st.user.is_logged_in:
-    #     print("User is logged in with Google")
-    #     st.session_state.logged_in = True
-    #     st.session_state.user_name = st.user.name
-    #     # st.session_state.page = "main"
-    #     # st.experimental_rerun()
-
-    # if st.session_state.get("logged_in", False):
-    #     st.markdown(f"✅ Welcome, **{st.session_state.user_name}**!")
         
     if st.user.is_logged_in and not st.session_state.get("logged_in", False):
         st.session_state.logged_in = True
