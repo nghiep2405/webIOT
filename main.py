@@ -3,7 +3,13 @@ from pages.login_register.login import login_ui
 from pages.login_register.register import register_ui
 from pages.chatbot.chatbot import chat
 
-st.set_page_config(page_title="IoT", layout="wide")
+st.set_page_config(page_title="IoT")
+
+if st.user.is_logged_in and not st.session_state.get("logged_in", False):
+    st.session_state.logged_in = True
+    st.session_state.user_name = st.user.name
+    st.session_state.page = "main"
+    st.experimental_rerun()
 
 # Initialize Session State for necessary variables
 if "logged_in" not in st.session_state:
@@ -12,6 +18,7 @@ if "user_name" not in st.session_state:
     st.session_state.user_name = ""
 if "page" not in st.session_state:
     st.session_state.page = "login"
+
 
 st.markdown("""
     <style>
