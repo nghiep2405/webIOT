@@ -1,6 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Body
 import logging
 from pydantic import BaseModel
 from datetime import datetime
@@ -106,3 +106,13 @@ def get_sound_history():
         return {"history": history_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting sound history: {str(e)}")
+
+@app.post("/upload/")
+async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
+    time = datetime.now()
+    timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+    path = f"imgs/{timestamp}.jpg"
+    with open(path, "wb") as f:
+        f.write(data)
+    
+    return {"Status": "Success"}

@@ -3,34 +3,33 @@
 #include <esp_wifi.h>
 #include <HTTPClient.h>
 #include <esp_now.h>
-
-// ===========================
-// Select camera model in board_config.h
-// ===========================
 #include "board_config.h"
 
-// ===========================
-// Enter your WiFi credentials
-// ===========================
+// Wifi and server
 const char *ssid = "IPhone";
 const char *password = "nak050105";
-const char* postServer = "http://192.168.1.200:8000/upload/";
+const char *postServer = "http://172.20.10.2:8000/upload/";
 
 void startCameraServer();
 void setupLedFlash();
 
+// Callback function
 static volatile bool captureRequested = false;
-void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
+void onDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
   captureRequested = true;
 }
 
-void sendPhotoHTTP(camera_fb_t * fb){
+void sendPhotoHTTP(camera_fb_t *fb) {
   HTTPClient http;
   http.begin(postServer);
   http.addHeader("Content-Type", "image/jpeg");
 
   int code = http.POST(fb->buf, fb->len);
-  Serial.printf("HTTP POST code: %d\n", code);
+  if (code <= 0) {
+    Serial.printf("POST error %d: %s\n", code, http.errorToString(code).c_str());
+  } else {
+    Serial.printf("HTTP POST code: %d\n", code);
+  }
   http.end();
 }
 
@@ -60,8 +59,8 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.frame_size = FRAMESIZE_UXGA;
-  config.pixel_format = PIXFORMAT_JPEG;  // for streaming
-  //config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
+  config.pixel_format = PIXFORMAT_JPEG; // for streaming
+  // config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
   config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
   config.jpeg_quality = 12;
@@ -97,9 +96,9 @@ void setup() {
   sensor_t *s = esp_camera_sensor_get();
   // initial sensors are flipped vertically and colors are a bit saturated
   if (s->id.PID == OV3660_PID) {
-    s->set_vflip(s, 1);        // flip it back
-    s->set_brightness(s, 2);   // up the brightness just a bit
-    s->set_saturation(s, -2);  // lower the saturation
+    s->set_vflip(s, 1);       // flip it back
+    s->set_brightness(s, 2);  // up the brightness just a bit
+    s->set_saturation(s, -2); // lower the saturation
   }
   // drop down frame size for higher initial frame rate
   if (config.pixel_format == PIXFORMAT_JPEG) {
@@ -128,8 +127,8 @@ void setup() {
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
 
-  if (esp_now_init() != ESP_OK) { 
-    Serial.println("ESP_NOW failed"); 
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP_NOW failed");
   }
 
   esp_now_register_recv_cb(onDataRecv);
@@ -137,17 +136,17 @@ void setup() {
 
 void loop() {
   // Do nothing. Everything is done in another task by the web server
-  if (captureRequested){
-     Serial.println("Sent");
-     captureRequested = false;
-    // camera_fb_t * fb = esp_camera_fb_get();
-    // if (!fb){
-    //   Serial.println("Camera capture failed");
-    //   return;
-    // }
-    // Serial.printf("Captured %u bytes\n", fb->len);
-    // sendPhotoHTTP(fb);
-    // esp_camera_fb_return(fb);
+  if (captureRequested) {
+    Serial.println("Sent");
+    captureRequested = false;
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) {
+      Serial.println("Camera capture failed");
+      return;
+    }
+    Serial.printf("Captured %u bytes\n", fb->len);
+    sendPhotoHTTP(fb);
+    esp_camera_fb_return(fb);
   }
   delay(10000);
 }
