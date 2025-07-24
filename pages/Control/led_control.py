@@ -1,5 +1,5 @@
 import streamlit as st
-#from mqttService import mqtt_client
+# from mqttService import mqtt_client
 import requests
 
 def led_controlUI():
@@ -20,6 +20,10 @@ def led_controlUI():
         }
         .stButton>button:hover {
             background-color: #cc0000;
+        }
+        .stSlider {
+            max-width: 950px;  /* Giới hạn chiều dài thanh slider */
+            margin: auto;      /* Căn giữa thanh slider */
         }
         .stSlider > div > div > div {
             background-color: #ff3333;
@@ -56,4 +60,16 @@ def led_controlUI():
             st.error(f"Error connecting to ESP32-CAM: {e}")
         st.session_state.prev_intensity = led_intensity
 
+    # Thêm một số thông tin bổ sung
+    with st.expander("ℹ️ Thông tin ESP32"):
+        st.info(f"""
+        **Địa chỉ IP:** {esp32_ip}
+        
+        **Trạng thái:** {'🟢 Kết nối' if st.session_state.get('prev_intensity', 0) >= 0 else '🔴 Ngắt kết nối'}
+        
+        **Độ sáng hiện tại:** {led_intensity}/255 ({round(led_intensity/255*100, 1)}%)
+        """)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+    
 led_controlUI()
