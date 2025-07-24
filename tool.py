@@ -106,3 +106,30 @@ def get_sound_history():
         return {"history": history_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting sound history: {str(e)}")
+    
+@app.get("/get-info-customers")
+def get_info_customers():
+    try:
+        # Lấy thông tin khách hàng từ Firestore
+        customers_ref = db.collection("customer")
+        docs = customers_ref.stream()
+
+        customers_list = []
+        for doc in docs:
+            data = doc.to_dict()
+            raw_come_in = data.get("come_in", "")
+            if raw_come_in:
+                try:
+                    formatted_come_in = raw_come_in.strftime("%d/%m/%Y %H:%M:%S")
+                except Exception:
+                    formatted_come_in = str(raw_come_in)
+            else:
+                formatted_come_in = ""
+            customers_list.append({
+                "age": data.get("age", ""),
+                "come_in": formatted_come_in,
+            })
+
+        return {"customers": customers_list}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")

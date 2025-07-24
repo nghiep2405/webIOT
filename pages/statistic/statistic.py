@@ -3,8 +3,65 @@ import pandas as pd
 import numpy as np
 import altair as alt
 import requests
+from collections import defaultdict
 
 API_BASE_URL = "http://localhost:8000"
+
+def count_come_in_per_day(customers):
+    if customers is None:
+        return pd.DataFrame(columns=["Date", "Come in"])
+
+    # Nếu là DataFrame rỗng
+    if isinstance(customers, pd.DataFrame) and customers.empty:
+        return pd.DataFrame(columns=["Date", "Come in"])
+
+    # Nếu là list hoặc dict rỗng
+    if isinstance(customers, (list, dict)) and not customers:
+        return pd.DataFrame(columns=["Date", "Come in"])
+
+    df = pd.DataFrame(customers)
+    if "come_in" not in df.columns:
+        return pd.DataFrame(columns=["Date", "Come in"])
+
+    # Chuyển datetime và đếm
+    df["Date"] = pd.to_datetime(df["come_in"], errors="coerce").dt.date
+    result = df.groupby("Date").size().reset_index(name="Come in")
+    return result
+
+
+def count_age_group_per_day(customers):
+    if customers is None:
+        return pd.DataFrame(columns=["Date", "Teen", "Adult", "Elderly"])
+
+    # Nếu là DataFrame rỗng
+    if isinstance(customers, pd.DataFrame) and customers.empty:
+        return pd.DataFrame(columns=["Date", "Teen", "Adult", "Elderly"])
+
+    # Nếu là list hoặc dict rỗng
+    if isinstance(customers, (list, dict)) and not customers:
+        return pd.DataFrame(columns=["Date", "Teen", "Adult", "Elderly"])
+
+    df = pd.DataFrame(customers)
+    if "come_in" not in df.columns or "age" not in df.columns:
+        return pd.DataFrame(columns=["Date", "Teen", "Adult", "Elderly"])
+    
+    # Tạo result 
+    df["Date"] = pd.to_datetime(df["come_in"], errors="coerce").dt.date
+    df["AgeGroup"] = df["age"]
+    grouped = df.groupby(["Date", "AgeGroup"]).size().unstack(fill_value=0)
+    for col in ["Teen", "Adult", "Elderly"]:
+        if col not in grouped.columns:
+            grouped[col] = 0
+    grouped = grouped[["Teen", "Adult", "Elderly"]]
+    grouped = grouped.reset_index()
+
+    # Lọc 10 ngày gần nhất (sort tăng dần, lấy 10 ngày cuối cùng)
+    if not grouped.empty:
+        grouped["Date"] = pd.to_datetime(grouped["Date"])
+        grouped = grouped.sort_values("Date")
+        grouped = grouped.tail(10)
+
+    return grouped
 
 def get_sound_history():
     """Lấy tất cả lịch sử sử dụng âm thanh"""
@@ -244,32 +301,63 @@ def display_sound_history():
             
 # Phần biểu đồ cũ (có thể giữ lại hoặc bỏ tùy ý)
 def display_old_charts():
+    import time
     st.header("📈 Biểu Đồ Mẫu")
-    
+
     tab1, tab2 = st.tabs(["📈 Customer per day", "🗃 Customer age group"])
-    
-    chart_data = {
-        "Ngày": pd.date_range(start="2025-06-01", periods=14, freq="D"),
-        "Nhiệt độ (°C)": [15, 16, 14, 12, 11, 15, 17, 15, 16, 14, 11, 9, 15, 11]
-    }
-    
-    tab1.line_chart(chart_data, x="Ngày")
-    
-    data = {
-        "Ngày": pd.date_range(start="2025-06-01", periods=14, freq="D"),
-        "A": np.random.randint(10, 50, size=14),
-        "B": np.random.randint(20, 60, size=14),
-        "C": np.random.randint(5, 30, size=14)
-    }
-    
-    df = pd.DataFrame(data)
-    
-    tab2.bar_chart(data, x="Ngày", stack=False)
+
+    # TAB 1: Realtime fetch mỗi 5s
+    with tab1:
+        if "last_fetch_tab1" not in st.session_state:
+            st.session_state.last_fetch_tab1 = 0
+        if time.time() - st.session_state.last_fetch_tab1 > 20 or "dataCos_tab1" not in st.session_state:
+            res = requests.get("http://localhost:8000/get-info-customers")
+            if res.status_code == 200:
+                st.session_state.dataCos_tab1 = res.json().get("customers", [])
+            else:
+                st.session_state.dataCos_tab1 = []
+            st.session_state.last_fetch_tab1 = time.time()
+            st.rerun()
+        df1 = count_come_in_per_day(st.session_state.get("dataCos_tab1", []))
+        if not df1.empty:
+            df1["Date"] = pd.to_datetime(df1["Date"])
+            st.line_chart(df1, x="Date", y="Come in")
+        else:
+            st.info("Không có dữ liệu khách hàng.")
+
+    # TAB 2: Chỉ fetch lại lúc 23:00 hoặc khi bấm nút
+    with tab2:
+        now = time.strftime("%H:%M")
+        if "last_update_11h" not in st.session_state:
+            st.session_state.last_update_11h = ""
+        if "dataCos_tab2" not in st.session_state:
+            st.session_state.dataCos_tab2 = []
+        # Nút cập nhật thủ công
+        if st.button("Cập nhật dữ liệu (tab2)"):
+            res2 = requests.get("http://localhost:8000/get-info-customers")
+            if res2.status_code == 200:
+                st.session_state.dataCos_tab2 = res2.json().get("customers", [])
+                st.session_state.last_update_11h = time.strftime("%d/%m/%Y")
+        # Tự động cập nhật lúc 23:00
+        if now == "23:00" and st.session_state.last_update_11h != time.strftime("%d/%m/%Y"):
+            res2 = requests.get("http://localhost:8000/get-info-customers")
+            if res2.status_code == 200:
+                st.session_state.dataCos_tab2 = res2.json().get("customers", [])
+                st.session_state.last_update_11h = time.strftime("%d/%m/%Y")
+        # Nếu chưa có dữ liệu tab2, lấy từ tab1 (lần fetch đầu tiên)
+        data_tab2 = st.session_state.get("dataCos_tab2", [])
+        if not data_tab2 and "dataCos_tab1" in st.session_state:
+            data_tab2 = st.session_state["dataCos_tab1"]
+        df2 = count_age_group_per_day(data_tab2)
+        if not df2.empty:
+            st.bar_chart(df2, x="Date", stack=False)
+        else:
+            st.info("Không có dữ liệu khách hàng.")
 
 # Hiển thị thống kê âm thanh
 display_sound_history()
     
 st.divider()
-    
+
 # Hiển thị biểu đồ mẫu (tùy chọn)
 display_old_charts()

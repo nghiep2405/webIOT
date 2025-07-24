@@ -14,6 +14,12 @@ else:
     else:
         st.set_page_config(page_title="IoT", layout="wide")
 
+if st.user.is_logged_in and not st.session_state.get("logged_in", False):
+    st.session_state.logged_in = True
+    st.session_state.user_name = st.user.name
+    st.session_state.page = "main"
+    st.rerun()
+
 # Initialize Session State for necessary variables
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -21,6 +27,7 @@ if "user_name" not in st.session_state:
     st.session_state.user_name = ""
 if "page" not in st.session_state:
     st.session_state.page = "login"
+
 
 st.markdown("""
     <style>
