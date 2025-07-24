@@ -1,12 +1,18 @@
-#include <WiFi.h>
+#include "WiFi.h"
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <WiFiClient.h>
 #include <PubSubClient.h> // Thêm thư viện MQTT
+#include <esp_now.h>
+#include <esp_wifi.h>
 
 // Thông tin Wi-Fi
-const char* ssid = "KhoaNghiep";
-const char* password = "sotaiChinh?1:0";
+const char* ssid = "IPhone";
+const char* password = "nak050105";
+const int CHANNEL = 0;
+
+// Địa chỉ MAC của ESP32-CAM
+const uint8_t  peer_mac[6]= {0x78, 0x21, 0x84, 0xE4, 0xAF, 0x08};
 
 // Thông tin ntfy (HTTP)
 const char* ntfy_server = "ntfy.sh";
@@ -55,11 +61,25 @@ void setup() {
   mqttClient.setCallback(mqttCallback);
   delay(1000);
   connectMQTT();
+  esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
+  delay(100);
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+  esp_now_peer_info_t peer = {};
+  memcpy(peer.peer_addr, peer_mac, 6);
+  peer.channel = CHANNEL;
+  peer.encrypt = false;
+  esp_now_add_peer(&peer);
+
 }
 
 void setup_wifi() {
   delay(10);
   Serial.println("Đang kết nối Wi-Fi...");
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP("ESP_SENDER_AP", NULL, CHANNEL, false);
   WiFi.begin(ssid, password);
   int wifi_attempts = 0;
   while (WiFi.status() != WL_CONNECTED && wifi_attempts < 20) {
@@ -187,6 +207,52 @@ void sendNtfyNotification(String message) {
   }
 }
 
+bool detectMotion(
+    int& sensorA_value,
+    int& sensorB_value,
+    int& lastSensorA_value,
+    int& lastSensorB_value,
+    bool& sensorA_triggered,
+    unsigned long& sensorA_triggerTime,
+    const unsigned long& triggerWindow,
+    unsigned long& lastNotificationTime
+) {
+    unsigned long currentTime = millis();
+
+    // Đọc giá trị cảm biến hiện tại
+    sensorA_value = digitalRead(sensorA);
+    sensorB_value = digitalRead(sensorB);
+
+    // Kiểm tra xem cảm biến A vừa được kích hoạt
+    if (sensorA_value == HIGH && lastSensorA_value == LOW) {
+        sensorA_triggered = true;
+        sensorA_triggerTime = currentTime;
+    }
+
+    // Nếu đã kích hoạt sensor A và sensor B cũng bật trong thời gian cho phép
+    if (sensorA_triggered && sensorB_value == HIGH && lastSensorB_value == LOW) {
+        if (currentTime - sensorA_triggerTime <= triggerWindow) {
+            lastNotificationTime = currentTime;
+            sensorA_triggered = false;
+            return true;
+        }
+    }
+
+    // Nếu quá thời gian cho phép thì reset trigger
+    if (sensorA_triggered && currentTime - sensorA_triggerTime > triggerWindow) {
+        sensorA_triggered = false;
+        Serial.println("Hết cửa sổ 30 giây, đặt lại trạng thái PIR A");
+    }
+
+    // Cập nhật giá trị cuối của cảm biến
+    lastSensorA_value = sensorA_value;
+    lastSensorB_value = sensorB_value;
+
+    return false;
+}
+
+
+const char msg[] = "EVENT";
 bool first_time1 = true;
 
 void loop() {
@@ -211,14 +277,10 @@ void loop() {
   Serial.print(" | PIR B: ");
   Serial.println(sensorB_value);
 
-  if (sensorA_value == HIGH && lastSensorA_value == LOW) {
-    Serial.println("555");
-    sensorA_triggered = true;
-    sensorA_triggerTime = currentTime;
-  }
-
-  if (sensorA_triggered && sensorB_value == HIGH && lastSensorB_value == LOW) {
-    if (currentTime - sensorA_triggerTime <= triggerWindow) {
+  if (detectMotion(sensorA_value, sensorB_value, lastSensorA_value, lastSensorB_value, sensorA_triggered, sensorA_triggerTime, triggerWindow, lastNotificationTime)) {
+      if (esp_now_send(peer_mac, (uint8_t *) &msg, sizeof(msg)) != ESP_OK) {
+        Serial.println("Send failed");
+      }
       Serial.println("999999999999");
       String message = "Motion Detected: A then B at ";
       message += String(timeClient.getHours()) + ":" + String(timeClient.getMinutes()) + ":" + String(timeClient.getSeconds());
@@ -229,16 +291,6 @@ void loop() {
       lastNotificationTime = currentTime;
       sensorA_triggered = false;
       first_time = false;
-    }
-  }
-
-  if (sensorA_triggered && currentTime - sensorA_triggerTime > triggerWindow) {
-    sensorA_triggered = false;
-    Serial.println("Hết cửa sổ 30 giây, đặt lại trạng thái PIR A");
-  }
-
-  lastSensorA_value = sensorA_value;
-  lastSensorB_value = sensorB_value;
-
+  } 
   delay(100);
 }
