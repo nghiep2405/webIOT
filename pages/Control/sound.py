@@ -3,16 +3,15 @@ import requests
 from mqttService import mqtt_client, MQTT_SONG_TOPIC
 import pandas as pd
 
-PLAYLIST_FILE = "playlist.txt"  # Place this file in the same directory as app.py or adjust path
+PLAYLIST_FILE = "playlist.txt"
 API_BASE_URL = "http://localhost:8000"
-# Read audio files from playlist.txt
+
 def load_playlist():
     try:
         with open(PLAYLIST_FILE, "r") as file:
-            # Read lines, strip whitespace, and filter empty lines
             files = [line.strip() for line in file.readlines() if line.strip()]
         custom_names = ["Làm việc đi", "Hết giờ làm việc", "Báo cáo", "Có trộm đột nhập"]
-        return list(zip(files, custom_names[:len(files)]))  # Pair files with custom names
+        return list(zip(files, custom_names[:len(files)]))
     except FileNotFoundError:
         st.error("File playlist.txt not found! Please create it.")
         return []
@@ -21,14 +20,10 @@ def load_playlist():
         return []
 
 def save_sound_history(user_name, sound_name):
-    """Lưu lịch sử sử dụng âm thanh vào database"""
     try:
         response = requests.post(
             f"{API_BASE_URL}/save-sound-history",
-            json={
-                "user_name": user_name,
-                "sound_name": sound_name
-            }
+            json={"user_name": user_name, "sound_name": sound_name}
         )
         if response.status_code == 200:
             return True, response.json().get("timestamp", "")
@@ -40,46 +35,54 @@ def save_sound_history(user_name, sound_name):
         return False, ""
 
 def sound_controlUI():
-    """Main function để gọi từ control.py"""
-    # Load and display audio files
     st.subheader("🔔 Chọn Bản Ghi Âm Để Phát")
-    # Kiểm tra xem user đã đăng nhập chưa
+    
     if not st.session_state.get("logged_in", False):
         st.error("Vui lòng đăng nhập để sử dụng chức năng này!")
         return
-    
+
     user_name = st.session_state.get("user_name", "")
     if not user_name:
         st.error("Không thể xác định tài khoản người dùng!")
         return
-    
+
     st.write(f"Chào mừng, {user_name}! Bạn có thể chọn bản ghi âm để phát.")
 
     audio_files = load_playlist()
+    messages = []  # Danh sách chứa các thông báo
+
     if audio_files:
-        cols = st.columns(2)  # Display 3 buttons per row, adjust as needed
+        cols = st.columns(2)
         for idx, (file, display_name) in enumerate(audio_files, 1):
             with cols[(idx - 1) % 2]:
                 if st.button(f"{display_name}", key=f"play_{idx}"):
                     try:
-                        # Publish the file index to MQTT broker
                         mqtt_client.publish(MQTT_SONG_TOPIC, str(idx), qos=1)
-                        # Lưu lịch sử sử dụng
                         success, timestamp = save_sound_history(user_name, display_name)
-                        st.success(f"Đang gửi lệnh phát {file}")  
+                        messages.append(f"🔊 Đang gửi lệnh phát {file}")
                         if success:
-                            st.success(f"✅ Đang phát: {display_name}")
-                            st.info(f"📝 Đã ghi lại lịch sử lúc: {timestamp}")
+                            messages.append(f"✅ Đang phát: {display_name}")
+                            messages.append(f"📝 Đã ghi lại lịch sử lúc: {timestamp}")
                         else:
-                            st.success(f"🔊 Đang gửi lệnh phát {file}")
-                            st.warning("⚠️ Không thể lưu lịch sử, nhưng âm thanh vẫn được phát")
+                            messages.append("⚠️ Không thể lưu lịch sử, nhưng âm thanh vẫn được phát")
                     except Exception as e:
-                        st.error(f"❌ Lỗi khi phát {display_name}: {e}")
+                        messages.append(f"❌ Lỗi khi phát {display_name}: {e}")
     else:
         st.warning("No audio files found in playlist.txt!")
-    
-    # Thêm thông tin hướng dẫn
+
+    # Hiển thị các thông báo ở dưới cùng
     st.divider()
+    for msg in messages:
+        if msg.startswith("✅"):
+            st.success(msg)
+        elif msg.startswith("⚠️") or msg.startswith("❌"):
+            st.warning(msg)
+        elif msg.startswith("📝"):
+            st.info(msg)
+        else:
+            st.success(msg)
+
+    # Thêm chú thích cuối trang
     st.info("💡 **Lưu ý:** Để xem thống kê và lịch sử sử dụng âm thanh, vui lòng truy cập trang **Statistics**.")
 
 # Chạy giao diện
