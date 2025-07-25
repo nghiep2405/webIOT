@@ -33,8 +33,6 @@ def count_come_in_per_day(customers):
         result = result.set_index("Date").reindex(all_dates, fill_value=0)
         result.index.name = "Date"
         result = result.reset_index()
-        # Lấy 10 ngày gần nhất
-        result = result.sort_values("Date").tail(10)
     return result
 
 
