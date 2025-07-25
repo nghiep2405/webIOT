@@ -11,6 +11,7 @@ def register_ui():
         if res.status_code == 200:
             st.success("Registration successful! Quay lại trang đăng nhập.")
             st.session_state.page = "login"
+            st.rerun()
         else:
             st.error("Registration failed")
 
