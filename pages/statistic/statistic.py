@@ -26,6 +26,15 @@ def count_come_in_per_day(customers):
     # Chuyển datetime và đếm
     df["Date"] = pd.to_datetime(df["come_in"], errors="coerce").dt.date
     result = df.groupby("Date").size().reset_index(name="Come in")
+
+    # Bổ sung các ngày bị thiếu
+    if not result.empty:
+        all_dates = pd.date_range(result["Date"].min(), result["Date"].max())
+        result = result.set_index("Date").reindex(all_dates, fill_value=0)
+        result.index.name = "Date"
+        result = result.reset_index()
+        # Lấy 10 ngày gần nhất
+        result = result.sort_values("Date").tail(10)
     return result
 
 
@@ -54,14 +63,19 @@ def count_age_group_per_day(customers):
             grouped[col] = 0
     grouped = grouped[["Children", "Teen", "Adult", "Elderly"]]
     grouped = grouped.reset_index()
-
-    # Lọc 10 ngày gần nhất (sort tăng dần, lấy 10 ngày cuối cùng)
+    
+    # Bổ sung các ngày bị thiếu
     if not grouped.empty:
+        all_dates = pd.date_range(grouped["Date"].min(), grouped["Date"].max())
+        grouped = grouped.set_index("Date").reindex(all_dates, fill_value=0)
+        grouped.index.name = "Date"
+        grouped = grouped.reset_index()
+        # Lấy 10 ngày gần nhất
         grouped["Date"] = pd.to_datetime(grouped["Date"])
-        grouped = grouped.sort_values("Date")
-        grouped = grouped.tail(10)
-
+        grouped = grouped.sort_values("Date").tail(10)
+        grouped = grouped[["Date","Children", "Teen", "Adult", "Elderly"]]
     return grouped
+
 def get_sound_history():
     """Lấy tất cả lịch sử sử dụng âm thanh"""
     try:
@@ -320,7 +334,25 @@ def display_old_charts():
         df1 = count_come_in_per_day(st.session_state.get("dataCos_tab1", []))
         if not df1.empty:
             df1["Date"] = pd.to_datetime(df1["Date"])
-            st.line_chart(df1, x="Date", y="Come in")
+            line = alt.Chart(df1).mark_line(point=alt.OverlayMarkDef(filled=True, fill='steelblue')).encode(
+            x=alt.X("Date:T", title="Date"),
+            y=alt.Y("Come in:Q", title="Come in"),
+            tooltip=["Date", "Come in"]
+            )
+
+            points = alt.Chart(df1).mark_circle(size=100).encode(
+                x="Date:T",
+                y="Come in:Q",
+                color=alt.value("red"),  # Hoặc dùng color theo giá trị: alt.Color("Come in:Q")
+                tooltip=["Date", "Come in"]
+            )
+
+            chart = (line + points).properties(
+                width=700,
+                height=400
+            )
+
+            st.altair_chart(chart, use_container_width=True)
         else:
             st.info("Không có dữ liệu khách hàng.")
 
@@ -344,7 +376,30 @@ def display_old_charts():
         df2 = count_age_group_per_day(data_tab2)
         # st.write(df2)
         if not df2.empty:
-            st.bar_chart(df2, x="Date", y=["Children", "Teen", "Adult", "Elderly"])
+            # Chỉ lấy 10 ngày gần nhất để vẽ biểu đồ (nếu chưa lấy ở hàm xử lý)
+            df_melted = df2.melt(id_vars="Date", value_vars=["Children", "Teen", "Adult", "Elderly"],
+                                var_name="AgeGroup", value_name="Count")
+
+            # Xác định thứ tự màu theo đúng ý
+            age_order = ["Children", "Teen", "Adult", "Elderly"]
+            color_scale = alt.Scale(domain=age_order,
+                                    range=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"])  # bạn có thể tùy chỉnh màu
+
+            chart = alt.Chart(df_melted).mark_bar().encode(
+                x=alt.X("Date:T", title="Date"),
+                y=alt.Y("Count:Q", stack="zero", title="Come in"),
+                color=alt.Color("AgeGroup:N",
+                                scale=color_scale,
+                                sort=age_order,
+                                legend=alt.Legend(orient="bottom", title=None)),
+                tooltip=["Date", "AgeGroup", "Count"]
+            ).properties(
+                width=700,
+                height=400,
+            )
+
+            st.altair_chart(chart, use_container_width=True)           
+            #st.bar_chart(df2, x="Date", y=["Children", "Teen", "Adult", "Elderly"])
         else:
             st.info("Không có dữ liệu khách hàng.")
 
