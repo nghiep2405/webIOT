@@ -3,24 +3,13 @@ import streamlit as st
 import requests
 
 def led_controlUI():
-    st.subheader("🔴 Điều khiển LED (ESP32)")   
+    st.subheader("💡 Điều khiển LED (ESP32)")   
 
-    # Thêm CSS tùy chỉnh
+    # Thêm CSS tùy chỉnh - chỉ áp dụng cho LED control section
     st.markdown(
         """
         <style>
-        .stButton>button {
-            background-color: #ff3333;
-            color: white;
-            border-radius: 20px;
-            padding: 10px 20px;
-            border: none;
-            font-size: 16px;
-            margin: 5px;
-        }
-        .stButton>button:hover {
-            background-color: #cc0000;
-        }
+        /* CSS chỉ áp dụng cho slider và các element cụ thể */
         .stSlider {
             max-width: 950px;  /* Giới hạn chiều dài thanh slider */
             margin: auto;      /* Căn giữa thanh slider */
@@ -29,9 +18,26 @@ def led_controlUI():
             background-color: #ff3333;
             border-radius: 10px;
         }
-        .stApp {
-            background-color: #1a1a1a;
+        
+        /* CSS cho LED control buttons - sử dụng key cụ thể */
+        .st-key-led_brightness_btn .stButton>button {
+            background-color: #ff3333;
             color: white;
+            border-radius: 20px;
+            padding: 10px 20px;
+            border: none;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .st-key-led_brightness_btn .stButton>button:hover {
+            background-color: #cc0000;
+        }
+        
+        /* CSS cho expander info */
+        .led-info-section {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 10px;
         }
         </style>
         """,
@@ -62,14 +68,12 @@ def led_controlUI():
 
     # Thêm một số thông tin bổ sung
     with st.expander("ℹ️ Thông tin ESP32"):
-        st.info(f"""
-        **Địa chỉ IP:** {esp32_ip}
-        
-        **Trạng thái:** {'🟢 Kết nối' if st.session_state.get('prev_intensity', 0) >= 0 else '🔴 Ngắt kết nối'}
-        
-        **Độ sáng hiện tại:** {led_intensity}/255 ({round(led_intensity/255*100, 1)}%)
-        """)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="led-info-section">
+            <strong>📡 Địa chỉ IP:</strong> {esp32_ip}<br><br>
+            <strong>🔗 Trạng thái:</strong> {'🟢 Kết nối' if st.session_state.get('prev_intensity', 0) >= 0 else '🔴 Ngắt kết nối'}<br><br>
+            <strong>💡 Độ sáng hiện tại:</strong> {led_intensity}/255 ({round(led_intensity/255*100, 1)}%)
+        </div>
+        """, unsafe_allow_html=True)
     
 led_controlUI()
