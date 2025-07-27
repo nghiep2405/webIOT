@@ -433,7 +433,7 @@ def display_charts():
         if not data_tab3 and "dataCos_tab1" in st.session_state:
             data_tab3 = st.session_state["dataCos_tab1"]
         df3 = count_age_group_per_day(data_tab3)
-        st.write(df2)
+        # st.write(df2)
         if not df3.empty:
             # Chỉ lấy 10 ngày gần nhất để vẽ biểu đồ (nếu chưa lấy ở hàm xử lý)
             df_melted = df3.melt(id_vars="Date", value_vars=["Children", "Teen", "Adult", "Elderly"],
@@ -461,7 +461,7 @@ def display_charts():
                 height=400,
             )
 
-            st.altair_chart(chart, use_container_width=True)     
+            st.altair_chart(chart, use_container_width=True)           
 
         else:
             st.info("No customer data available to display")
