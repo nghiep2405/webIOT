@@ -318,7 +318,7 @@ def display_sound_history():
             st.info("No history data available to filter.")
 
 def display_charts():
-    st.header("📈 Biểu Đồ Mẫu")
+    st.header("📈 Sample Dashboard for Store Information")
 
     tab1, tab2, tab3 = st.tabs(["📈 Customer per day", "🥧 Age group overview", "📊 Customer age group"])
 
