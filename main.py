@@ -144,7 +144,7 @@ if st.session_state.logged_in:
         st.markdown("---")
         st.markdown("<div style='flex: 1;'></div>", unsafe_allow_html=True)
         st.markdown('<div style="width: 100%; padding: 0; margin: 0;">', unsafe_allow_html=True)
-        if st.button("🚪 Đăng xuất", key="sidebar_logout", use_container_width=True):
+        if st.button("🚪 Log out", key="sidebar_logout", use_container_width=True):
             st.query_params["logout"] = "true"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
