@@ -1,15 +1,26 @@
 import streamlit as st
-#from mqttService import mqtt_client
+# from mqttService import mqtt_client
 import requests
 
 def led_controlUI():
-    st.subheader("🔴 Điều khiển LED (ESP32)")   
+    st.subheader("💡 Điều khiển LED (ESP32)")   
 
-    # Thêm CSS tùy chỉnh
+    # Thêm CSS tùy chỉnh - chỉ áp dụng cho LED control section
     st.markdown(
         """
         <style>
-        .stButton>button {
+        /* CSS chỉ áp dụng cho slider và các element cụ thể */
+        .stSlider {
+            max-width: 950px;  /* Giới hạn chiều dài thanh slider */
+            margin: auto;      /* Căn giữa thanh slider */
+        }
+        .stSlider > div > div > div {
+            background-color: #ff3333;
+            border-radius: 10px;
+        }
+        
+        /* CSS cho LED control buttons - sử dụng key cụ thể */
+        .st-key-led_brightness_btn .stButton>button {
             background-color: #ff3333;
             color: white;
             border-radius: 20px;
@@ -18,16 +29,15 @@ def led_controlUI():
             font-size: 16px;
             margin: 5px;
         }
-        .stButton>button:hover {
+        .st-key-led_brightness_btn .stButton>button:hover {
             background-color: #cc0000;
         }
-        .stSlider > div > div > div {
-            background-color: #ff3333;
+        
+        /* CSS cho expander info */
+        .led-info-section {
+            background-color: #2d2d2d;
+            padding: 15px;
             border-radius: 10px;
-        }
-        .stApp {
-            background-color: #1a1a1a;
-            color: white;
         }
         </style>
         """,
@@ -56,4 +66,14 @@ def led_controlUI():
             st.error(f"Error connecting to ESP32-CAM: {e}")
         st.session_state.prev_intensity = led_intensity
 
+    # Thêm một số thông tin bổ sung
+    with st.expander("ℹ️ Thông tin ESP32"):
+        st.markdown(f"""
+        <div class="led-info-section">
+            <strong>📡 Địa chỉ IP:</strong> {esp32_ip}<br><br>
+            <strong>🔗 Trạng thái:</strong> {'🟢 Kết nối' if st.session_state.get('prev_intensity', 0) >= 0 else '🔴 Ngắt kết nối'}<br><br>
+            <strong>💡 Độ sáng hiện tại:</strong> {led_intensity}/255 ({round(led_intensity/255*100, 1)}%)
+        </div>
+        """, unsafe_allow_html=True)
+    
 led_controlUI()

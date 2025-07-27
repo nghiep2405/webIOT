@@ -4,6 +4,8 @@ from fastapi import FastAPI, Request, HTTPException
 import logging
 from pydantic import BaseModel
 from datetime import datetime
+from typing import List
+from pytz import timezone, UTC
 
 app = FastAPI()
 
@@ -106,3 +108,64 @@ def get_sound_history():
         return {"history": history_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting sound history: {str(e)}")
+    
+@app.get("/get-info-customers")
+def get_info_customers():
+    try:
+        customers_ref = db.collection("customer").order_by("come_in", direction=firestore.Query.DESCENDING)
+        docs = customers_ref.stream()
+
+        customers_list = []
+        for doc in docs:
+            data = doc.to_dict()
+            raw_come_in = data.get("come_in", None)
+            formatted_come_in = ""
+
+            tz_vn = timezone("Asia/Ho_Chi_Minh")
+            if isinstance(raw_come_in, datetime):
+                # Nếu không có tzinfo, giả sử là UTC rồi chuyển về VN
+                if raw_come_in.tzinfo is None:
+                    raw_come_in = UTC.localize(raw_come_in)
+                dt_vn = raw_come_in.astimezone(tz_vn)
+                formatted_come_in = dt_vn.strftime("%d/%m/%Y %H:%M:%S")
+            else:
+                formatted_come_in = str(raw_come_in)
+
+            customers_list.append({
+                "age": data.get("age", ""),
+                "come_in": formatted_come_in,
+            })
+
+        return {"customers": customers_list}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")
+    
+# API để khởi tạo dữ liệu khách hàng ảo
+@app.post("/init-fake-customers")
+def init_fake_customers():
+    try:
+        fake_data = [
+            # {"age": "Elderly", "come_in": "23/07/2025 07:38:22"},
+            # {"age": "Children", "come_in": "21/07/2025 22:23:05"},
+            # {"age": "Teen", "come_in": "20/07/2025 10:15:00"},
+            # {"age": "Adult", "come_in": "19/07/2025 14:45:30"},
+            # {"age": "Elderly", "come_in": "18/07/2025 09:00:00"},
+            # {"age": "Adult", "come_in": "17/07/2025 16:20:10"},
+            # {"age": "Teen", "come_in": "16/07/2025 11:11:11"},
+            # {"age": "Children", "come_in": "15/07/2025 08:08:08"},
+            # {"age": "Elderly", "come_in": "14/07/2025 20:20:20"},
+            {"age": "Teen", "come_in": "23/07/2025 13:13:13"},
+        ]
+        for item in fake_data:
+            # Lưu vào Firestore, parse come_in sang datetime nếu cần
+            try:
+                come_in_dt = datetime.strptime(item["come_in"], "%d/%m/%Y %H:%M:%S")
+            except Exception:
+                come_in_dt = item["come_in"]
+            db.collection("customer").add({
+                "age": item["age"],
+                "come_in": come_in_dt
+            })
+        return {"message": "Fake customers initialized successfully", "count": len(fake_data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error initializing fake customers: {str(e)}")
