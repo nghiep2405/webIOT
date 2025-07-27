@@ -46,7 +46,7 @@ def sound_controlUI():
         st.error("Không thể xác định tài khoản người dùng!")
         return
 
-    st.write(f"Chào mừng, {user_name}! Bạn có thể chọn bản ghi âm để phát.")
+    st.write("Bạn có thể chọn bản ghi âm để phát.")
 
     audio_files = load_playlist()
     messages = []  # Danh sách chứa các thông báo
