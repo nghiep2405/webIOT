@@ -3,66 +3,66 @@ import requests
 
 def login_ui():
     print("Rendering login UI...")
-    st.title("🔐 Đăng nhập")
+    st.title("🔐 Login")
 
-    # Kiểm tra và hiển thị thông báo nếu vừa logout
+    # Check and show message if just logged out
     if st.query_params.get("logout") == "true":
-        st.success("Đã đăng xuất thành công!")
+        st.success("Successfully logged out!")
         st.query_params.clear()
 
-    # Tab để chọn phương thức đăng nhập
-    tab1, tab2 = st.tabs(["🔑 Tài khoản & Mật khẩu", "🌐 Đăng nhập Google"])
+    # Tabs to select login method
+    tab1, tab2 = st.tabs(["🔑 Username & Password", "🌐 Login with Google"])
     
     with tab1:
-        st.subheader("Đăng nhập bằng tài khoản")
+        st.subheader("Login with your account")
         
-        # Lấy input người dùng
-        name = st.text_input("Tên đăng nhập", key="username_input")
-        password = st.text_input("Mật khẩu", type="password", key="password_input")
+        # Get user input
+        name = st.text_input("Username", key="username_input")
+        password = st.text_input("Password", type="password", key="password_input")
 
-        # Login bằng username-password
-        if st.button("Đăng nhập", key="btn_login", use_container_width=True):
+        # Login with username-password
+        if st.button("Login", key="btn_login", use_container_width=True):
             if not name or not password:
-                st.warning("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.")
+                st.warning("Please enter both username and password.")
             else:
                 try:
                     res = requests.post("http://localhost:8000/login", params={"name": name, "password": password})
                     if res.status_code == 200:
                         st.session_state.logged_in = True
                         st.session_state.user_name = name
-                        st.session_state.user_email = ""  # Không có email cho username/password
-                        st.session_state.user_picture = ""  # Không có ảnh cho username/password
+                        st.session_state.user_email = ""  # No email for username/password
+                        st.session_state.user_picture = ""  # No picture for username/password
                         st.session_state.login_method = "username/password"
                         st.session_state.page = "main"
-                        st.success("Đăng nhập thành công!")
+                        st.success("Login successful!")
                         st.rerun()
                     else:
-                        st.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.")
+                        st.error("Login failed. Please check your credentials.")
                 except requests.exceptions.ConnectionError:
-                    st.error("Không thể kết nối đến server. Vui lòng thử lại sau.")
+                    st.error("Cannot connect to server. Please try again later.")
                 except Exception as e:
-                    st.error(f"Có lỗi xảy ra: {str(e)}")
+                    st.error(f"An error occurred: {str(e)}")
 
     with tab2:
-        st.subheader("Đăng nhập bằng Google")
+        st.subheader("Login with Google")
         
-        # Kiểm tra trạng thái đăng nhập Google
+        # Check Google login status
         if st.user.is_logged_in:
-            st.info(f"Đã đăng nhập Google với tài khoản: **{st.user.name}**")
+            st.info(f"Logged in with Google account: **{st.user.name}**")
             
-            # Hiển thị ảnh đại diện nếu có
+            # Show avatar if available
             if hasattr(st.user, 'picture') and st.user.picture:
                 col_avatar, col_info = st.columns([1, 3])
                 with col_avatar:
                     st.image(st.user.picture, width=80)
                 with col_info:
-                    st.write(f"**Tên:** {st.user.name}")
+                    st.write(f"**Name:** {st.user.name}")
                     if hasattr(st.user, 'email') and st.user.email:
                         st.write(f"**Email:** {st.user.email}")
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("✅ Tiếp tục với tài khoản này", use_container_width=True):
+                if st.button("✅ Continue with this account", use_container_width=True):
                     st.session_state.logged_in = True
                     st.session_state.user_name = st.user.name
                     st.session_state.user_email = getattr(st.user, 'email', '')
@@ -72,29 +72,29 @@ def login_ui():
                     st.rerun()
             
             with col2:
-                if st.button("🔄 Đổi tài khoản Google", use_container_width=True):
-                    # Logout khỏi Google và đăng nhập lại
+                if st.button("🔄 Switch Google account", use_container_width=True):
+                    # Logout from Google and login again
                     st.logout()
                     st.rerun()
         else:
-            st.info("Đăng nhập nhanh chóng và an toàn với tài khoản Google của bạn.")
+            st.info("Quick and secure login with your Google account.")
             
-            if st.button("🚀 Đăng nhập với Google", use_container_width=True, type="primary"):
-                # Đăng nhập với Google
+            if st.button("🚀 Login with Google", use_container_width=True, type="primary"):
+                # Login with Google
                 st.login("google")
 
-    # Divider và link đăng ký
+    # Divider and registration link
     st.markdown("---")
     
     col1, col2 = st.columns([2, 1])
     with col1:
-        st.markdown("**Chưa có tài khoản?**")
+        st.markdown("**Don't have an account?**")
     with col2:
-        if st.button("📝 Đăng ký ngay", use_container_width=True):
+        if st.button("📝 Register now", use_container_width=True):
             st.session_state.page = "register"
             st.rerun()
 
-    # Xử lý khi Google OAuth hoàn thành (callback)
+    # Handle Google OAuth callback
     if st.user.is_logged_in and not st.session_state.get("logged_in", False):
         if st.user.name:
             st.session_state.logged_in = True
