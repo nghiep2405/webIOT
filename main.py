@@ -24,9 +24,7 @@ if "page" not in st.session_state:
 
 st.markdown("""
     <style>
-    /* Bỏ style cho nút ngoại lệ */
     .st-key-no_style .stButton > button {
-        /* Hoặc chỉ định lại kiểu bạn muốn: */
         width: 60px;
         height: 60px;
         border-radius: 50%;
