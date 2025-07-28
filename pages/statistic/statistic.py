@@ -3,6 +3,7 @@ import pandas as pd
 import altair as alt
 import requests
 import time
+import numpy as np
 
 API_BASE_URL = "http://localhost:8000"
 
@@ -93,6 +94,10 @@ def get_sound_history():
     except Exception as e:
         st.error(f"Lỗi kết nối API: {e}")
         return []
+    
+# fetch data từ API
+all_history = get_sound_history()
+ 
 
 def display_sound_history():
     """Hiển thị lịch sử sử dụng âm thanh"""
@@ -102,20 +107,19 @@ def display_sound_history():
     tab1, tab2, tab3 = st.tabs(["📊 All History", "👤 Filter by User", "🎵 Filter by Sound Clip"])
 
     with tab1:
-        history_data = get_sound_history()
-        if history_data:
+        if all_history:
             # Tạo DataFrame
-            df = pd.DataFrame(history_data)
+            df = pd.DataFrame(all_history)
             
             # Hiển thị thống kê tổng quan
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total Usage", len(history_data))
+                st.metric("Total Usage", len(all_history))
             with col2:
                 unique_users = df['user_name'].nunique()
                 st.metric("Number of Users", unique_users)
             with col3:
-                if len(history_data) > 0:
+                if len(all_history) > 0:
                     most_used = df['sound_name'].value_counts().index[0]
                     st.metric("Most Used Sound", most_used)
 
@@ -183,7 +187,6 @@ def display_sound_history():
 
     with tab2:
         # Lấy danh sách tất cả user để filter
-        all_history = get_sound_history()
         if all_history:
             all_users = list(set([record['user_name'] for record in all_history]))
             selected_user = st.selectbox("Choose user:", ["All"] + sorted(all_users), key="user_filter")
@@ -247,7 +250,6 @@ def display_sound_history():
 
     with tab3:
         # Lọc theo bản ghi âm
-        all_history = get_sound_history()
         if all_history:
             all_sounds = list(set([record['sound_name'] for record in all_history]))
             selected_sound = st.selectbox("Select Sound:", ["All"] + sorted(all_sounds), key="sound_filter")
@@ -392,22 +394,22 @@ def display_charts():
 
             age_order = ["Children", "Teen", "Adult", "Elderly"]
             color_scale = alt.Scale(domain=age_order,
-                                    range=["#1f77b4", "#2ca02c", "#f1c40f", "#d62728"])
+                        range=["#1f77b4", "#2ca02c", "#f1c40f", "#d62728"])
 
             base = alt.Chart(df2).encode(
-                theta=alt.Theta("Count:Q"),
-                color=alt.Color("Age Group:N", 
-                               scale=color_scale)
+            theta=alt.Theta("Count:Q"),
+            color=alt.Color("Age Group:N", 
+                    scale=color_scale),
             )
 
             pie = base.mark_arc(innerRadius=50, outerRadius=130).encode(
-                tooltip=["Age Group:N", "Count:Q", alt.Tooltip("Percent:Q", format=".2f", title="Percent (%)")]
+            tooltip=["Age Group:N", "Count:Q", alt.Tooltip("Percent:Q", format=".2f", title="Percent (%)")]
             )
 
             chart = pie.properties(
-                width=500,
-                height=400,
-                title="Proportion of total population by age group"
+            width=500,
+            height=400,
+            title="Proportion of total population by age group"
             )
 
             st.altair_chart(chart, use_container_width=True)
@@ -436,32 +438,62 @@ def display_charts():
         # st.write(df2)
         if not df3.empty:
             # Chỉ lấy 10 ngày gần nhất để vẽ biểu đồ (nếu chưa lấy ở hàm xử lý)
-            df_melted = df3.melt(id_vars="Date", value_vars=["Children", "Teen", "Adult", "Elderly"],
-                                var_name="Age Group", value_name="Count")
-
-            age_order = ["Children", "Teen", "Adult", "Elderly"]
-            color_scale = alt.Scale(domain=age_order,
-                                    range=["#1f77b4", "#2ca02c", "#f1c40f", "#d62728"])  # bạn có thể tùy chỉnh màu
-
-            chart = alt.Chart(df_melted).mark_bar().encode(
-                x=alt.X("Date:T", 
-                        title="Date",
-                        axis=alt.Axis(
-                            format="%b %d",  # Chỉ hiển thị tháng và ngày
-                            labelAngle=0,  # Nghiêng nhãn để dễ đọc
-                            tickCount=10     # Số lượng tick cố định
-                        )),
-                y=alt.Y("Count:Q", stack="zero", title="Come in"),
-                color=alt.Color("Age Group:N",
-                                scale=color_scale,
-                                legend=alt.Legend(orient="bottom", title=None)),
-                tooltip=["Date:T", "Age Group:N", "Count:Q"]
-            ).properties(
-                width=700,
-                height=400,
+            df_melted = df3.melt(
+                id_vars="Date",
+                value_vars=["Children", "Teen", "Adult", "Elderly"],
+                var_name="Age Group",
+                value_name="Count"
             )
 
-            st.altair_chart(chart, use_container_width=True)           
+            # Đảm bảo đúng thứ tự
+            age_order = ["Children", "Teen", "Adult", "Elderly"]
+            color_order = ["#1f77b4", "#2ca02c", "#f1c40f", "#d62728"]
+            df_melted["Age Group"] = pd.Categorical(df_melted["Age Group"], categories=age_order, ordered=True)
+
+            # Tạo cột y0 và y1 để vẽ từng layer
+            df_melted = df_melted.sort_values(by=["Date", "Age Group"])
+            df_melted["y0"] = 0
+            df_melted["y1"] = 0
+
+            # Tính cộng dồn thủ công theo Date
+            for date in df_melted["Date"].unique():
+                y_cum = 0
+                for group in age_order:
+                    mask = (df_melted["Date"] == date) & (df_melted["Age Group"] == group)
+                    df_melted.loc[mask, "y0"] = y_cum
+                    count = df_melted.loc[mask, "Count"].values[0] if not df_melted.loc[mask].empty else 0
+                    y_cum += count
+                    df_melted.loc[mask, "y1"] = y_cum
+
+            # Tạo từng layer riêng
+            layers = []
+            for group, color in zip(age_order, color_order):
+                df_group = df_melted[df_melted["Age Group"] == group]
+                chart = alt.Chart(df_group).mark_bar().encode(
+                    x=alt.X("Date:T", title="Date", axis=alt.Axis(format="%b %d", labelAngle=0, tickCount=10)),
+                    y=alt.Y("y0:Q", title="Come in"),      # điểm bắt đầu cột
+                    y2="y1:Q",                             # điểm kết thúc cột
+                    color=alt.value(color),
+                    tooltip=["Date:T", "Age Group:N", "Count:Q"]
+                )
+                layers.append(chart)
+            # Layer phụ để tạo legend (chú thích) không ảnh hưởng đến biểu đồ
+            legend_df = pd.DataFrame({
+                "Age Group": age_order,
+                "Date": [df_melted["Date"].min()] * len(age_order),  # giá trị Date tạm
+                "Count": [0] * len(age_order)  # giá trị Count tạm
+            })
+            legend_chart = alt.Chart(legend_df).mark_bar(opacity=0).encode(
+                color=alt.Color("Age Group:N", scale=alt.Scale(domain=age_order, range=color_order),
+                                legend=alt.Legend(orient="bottom", title=None))
+            )
+
+            final_chart = alt.layer(alt.layer(*layers) + legend_chart).resolve_scale(y='shared').properties(
+                width=700,
+                height=400
+            )
+
+            st.altair_chart(final_chart, use_container_width=True)    
 
         else:
             st.info("No customer data available to display")
