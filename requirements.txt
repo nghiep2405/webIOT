@@ -1,4 +1,5 @@
 streamlit
+fastapi["standard"]
 pydantic
 paho-mqtt
 authlib // ">=1.3.2"
