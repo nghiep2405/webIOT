@@ -1,9 +1,10 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Body
 import logging
 from pydantic import BaseModel
 from datetime import datetime
+from typing import List
 from pytz import timezone, UTC
 
 app = FastAPI()
@@ -168,3 +169,21 @@ def init_fake_customers():
         return {"message": "Fake customers initialized successfully", "count": len(fake_data)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error initializing fake customers: {str(e)}")
+
+@app.post("/upload/")
+async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
+    time = datetime.now()
+    timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+    path = f"imgs/{timestamp}.jpg"
+    with open(path, "wb") as f:
+        f.write(data)
+    try:
+        db.collection("customer").add({
+            "age_group": "",
+            "come_in": time,
+        })
+    except Exception as e:
+        logging.error(f"Error saving customer data: {e}")
+        raise HTTPException(status_code=500, detail="Error saving customer data")
+    
+    return {"Status": "Success"}
