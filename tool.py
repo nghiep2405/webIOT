@@ -132,7 +132,7 @@ def get_info_customers():
                 formatted_come_in = str(raw_come_in)
 
             customers_list.append({
-                "age": data.get("age", ""),
+                "age_group": data.get("age_group", ""),
                 "come_in": formatted_come_in,
             })
 
@@ -145,16 +145,16 @@ def get_info_customers():
 def init_fake_customers():
     try:
         fake_data = [
-            # {"age": "Elderly", "come_in": "23/07/2025 07:38:22"},
-            # {"age": "Children", "come_in": "21/07/2025 22:23:05"},
-            # {"age": "Teen", "come_in": "20/07/2025 10:15:00"},
-            # {"age": "Adult", "come_in": "19/07/2025 14:45:30"},
-            # {"age": "Elderly", "come_in": "18/07/2025 09:00:00"},
-            # {"age": "Adult", "come_in": "17/07/2025 16:20:10"},
-            # {"age": "Teen", "come_in": "16/07/2025 11:11:11"},
-            # {"age": "Children", "come_in": "15/07/2025 08:08:08"},
-            # {"age": "Elderly", "come_in": "14/07/2025 20:20:20"},
-            {"age": "Teen", "come_in": "23/07/2025 13:13:13"},
+            # {"age_group": "Elderly", "come_in": "23/07/2025 07:38:22"},
+            # {"age_group": "Children", "come_in": "21/07/2025 22:23:05"},
+            # {"age_group": "Teen", "come_in": "20/07/2025 10:15:00"},
+            # {"age_group": "Adult", "come_in": "19/07/2025 14:45:30"},
+            # {"age_group": "Elderly", "come_in": "18/07/2025 09:00:00"},
+            # {"age_group": "Adult", "come_in": "17/07/2025 16:20:10"},
+            # {"age_group": "Teen", "come_in": "16/07/2025 11:11:11"},
+            # {"age_group": "Children", "come_in": "15/07/2025 08:08:08"},
+            # {"age_group": "Elderly", "come_in": "14/07/2025 20:20:20"},
+            {"age_group": "Teen", "come_in": "23/07/2025 13:13:13"},
         ]
         for item in fake_data:
             # Lưu vào Firestore, parse come_in sang datetime nếu cần
@@ -163,7 +163,7 @@ def init_fake_customers():
             except Exception:
                 come_in_dt = item["come_in"]
             db.collection("customer").add({
-                "age": item["age"],
+                "age_group": item["age_group"],
                 "come_in": come_in_dt
             })
         return {"message": "Fake customers initialized successfully", "count": len(fake_data)}
@@ -177,5 +177,13 @@ async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
     path = f"imgs/{timestamp}.jpg"
     with open(path, "wb") as f:
         f.write(data)
+    try:
+        db.collection("customer").add({
+            "age_group": "",
+            "come_in": time,
+        })
+    except Exception as e:
+        logging.error(f"Error saving customer data: {e}")
+        raise HTTPException(status_code=500, detail="Error saving customer data")
     
     return {"Status": "Success"}

@@ -9,12 +9,12 @@ def register_ui():
     if st.button("Register"):
         res = requests.post("http://localhost:8000/register", params={"name": name, "password": password})
         if res.status_code == 200:
-            st.success("Registration successful! Quay lại trang đăng nhập.")
+            st.success("Registration successful! Please go back to the login page.")
             st.session_state.page = "login"
             st.rerun()
         else:
             st.error("Registration failed")
 
-    if st.button("Quay lại đăng nhập"):
+    if st.button("Back to Login"):
         st.session_state.page = "login"
         st.rerun()
