@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 import logging
 from pydantic import BaseModel
 from datetime import datetime, timedelta
-from typing import List
 from pytz import timezone, UTC
 from PIL import Image
 import base64
@@ -230,7 +229,11 @@ async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
 @app.get("/get_enter")
 async def get_enter():
     try:
-        return enter_info
+        data = enter_info["time"].copy()
+        l = len(data)
+        if l > 0:
+            enter_info["time"] = enter_info["time"][l:]
+        return {"time": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")
     
@@ -251,21 +254,6 @@ def run_model():
         FieldFilter("come_in", ">=", start),
         FieldFilter("come_in", "<", end)
     ]
-    try:
-        # Load credentials
-        cred = credentials.Certificate("testh-4386a-firebase-adminsdk-fbsvc-40f75b0b3f.json")
-        
-        # Initialize Firebase app (nếu đã init thì không init lại)
-        if not firebase_admin._apps:
-            firebase_admin.initialize_app(cred)
-            logging.info("✅ Firebase app initialized successfully.")
-
-        # Initialize Firestore client
-        db = firestore.client()
-
-    except Exception as e:
-        db = None  # Set db là None để tránh lỗi sau này
-        logging.error(f" Failed to initialize Firebase/Firestore: {e}")
 
     # Get customer data
     customers = (db.collection("customer")
@@ -323,6 +311,7 @@ def run_model():
 async def start_analyze():
     loop = asyncio.get_running_loop()
     loop.run_in_executor(executor, run_model)
-    return {"status": "queued"}
+    return {"status": "Queued"}
+
 
 # API để lấy thông tin độ tuổi

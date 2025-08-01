@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 import torchvision
 import torch.nn as nn
-import cv2
+
 transform = transforms.Compose([
     transforms.Resize([224, 224]),
     transforms.ToTensor(),
