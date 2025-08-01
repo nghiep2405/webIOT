@@ -61,7 +61,7 @@ class_name = ["children", "teen", "aldult", "elderly"]
 counts = np.bincount(predicted_class.cpu().numpy(), minlength=len(stat))
 # for i, count in enumerate(counts):
 #     class_names.keys[i] = count
-
+print(counts)
 for idx, key in enumerate(stat.keys()):
     stat[key] += counts[idx]
   
