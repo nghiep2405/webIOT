@@ -324,3 +324,5 @@ async def start_analyze():
     loop = asyncio.get_running_loop()
     loop.run_in_executor(executor, run_model)
     return {"status": "queued"}
+
+# API để lấy thông tin độ tuổi
