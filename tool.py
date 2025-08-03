@@ -124,7 +124,6 @@ def get_info_customers():
 
             tz_vn = timezone("Asia/Ho_Chi_Minh")
             if isinstance(raw_come_in, datetime):
-                # Nếu không có tzinfo, giả sử là UTC rồi chuyển về VN
                 if raw_come_in.tzinfo is None:
                     raw_come_in = UTC.localize(raw_come_in)
                 dt_vn = raw_come_in.astimezone(tz_vn)
@@ -132,11 +131,21 @@ def get_info_customers():
             else:
                 formatted_come_in = str(raw_come_in)
 
+            # 🌀 Đảo ngược ngày và tháng: dd/mm/yyyy -> mm/dd/yyyy
+            try:
+                parts = formatted_come_in.split(" ")
+                date_parts = parts[0].split("/")
+                reversed_date = f"{date_parts[1]}/{date_parts[0]}/{date_parts[2]}"
+                formatted_come_in = f"{reversed_date} {parts[1]}"
+            except Exception as e:
+                pass  # fallback nếu lỗi split
+
             customers_list.append({
                 "age_group": data.get("age_group", ""),
                 "come_in": formatted_come_in,
             })
 
+        print(customers_list)
         return {"customers": customers_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")
@@ -146,15 +155,37 @@ def get_info_customers():
 def init_fake_customers():
     try:
         fake_data = [
-            # {"age_group": "Elderly", "come_in": "23/07/2025 07:38:22"},
-            # {"age_group": "Children", "come_in": "21/07/2025 22:23:05"},
-            # {"age_group": "Teen", "come_in": "20/07/2025 10:15:00"},
-            # {"age_group": "Adult", "come_in": "19/07/2025 14:45:30"},
-            # {"age_group": "Elderly", "come_in": "18/07/2025 09:00:00"},
-            # {"age_group": "Adult", "come_in": "17/07/2025 16:20:10"},
-            # {"age_group": "Teen", "come_in": "16/07/2025 11:11:11"},
-            # {"age_group": "Children", "come_in": "15/07/2025 08:08:08"},
-            # {"age_group": "Elderly", "come_in": "14/07/2025 20:20:20"},
+            # {"age_group": "Elderly", "come_in": "25/07/2025 07:38:22"},
+            # {"age_group": "Children", "come_in": "24/07/2025 22:23:05"},
+            # {"age_group": "Teen", "come_in": "24/07/2025 10:15:00"},
+            # {"age_group": "Adult", "come_in": "25/07/2025 14:45:30"},
+            # {"age_group": "Elderly", "come_in": "26/07/2025 09:00:00"},
+            # {"age_group": "Adult", "come_in": "26/07/2025 16:20:10"},
+            # {"age_group": "Teen", "come_in": "27/07/2025 11:11:11"},
+            # {"age_group": "Children", "come_in": "27/07/2025 08:08:08"},
+            # {"age_group": "Elderly", "come_in": "27/07/2025 20:20:20"},
+            # {"age_group": "Teen", "come_in": "27/07/2025 13:13:13"},
+            
+            # {"age_group": "Elderly", "come_in": "27/07/2025 07:38:22"},
+            # {"age_group": "Children", "come_in": "28/07/2025 22:23:05"},
+            # {"age_group": "Teen", "come_in": "28/07/2025 10:15:00"},
+            # {"age_group": "Adult", "come_in": "29/07/2025 14:45:30"},
+            # {"age_group": "Elderly", "come_in": "29/07/2025 09:00:00"},
+            # {"age_group": "Adult", "come_in": "30/07/2025 16:20:10"},
+            # {"age_group": "Teen", "come_in": "1/08/2025 11:11:11"},
+            # {"age_group": "Children", "come_in": "1/08/2025 08:08:08"},
+            # {"age_group": "Elderly", "come_in": "2/08/2025 20:20:20"},
+            # {"age_group": "Teen", "come_in": "3/08/2025 13:13:13"},
+
+            {"age_group": "Elderly", "come_in": "23/07/2025 07:38:22"},
+            {"age_group": "Children", "come_in": "21/07/2025 22:23:05"},
+            {"age_group": "Teen", "come_in": "20/07/2025 10:15:00"},
+            {"age_group": "Adult", "come_in": "19/07/2025 14:45:30"},
+            {"age_group": "Elderly", "come_in": "18/07/2025 09:00:00"},
+            {"age_group": "Adult", "come_in": "17/07/2025 16:20:10"},
+            {"age_group": "Teen", "come_in": "16/07/2025 11:11:11"},
+            {"age_group": "Children", "come_in": "15/07/2025 08:08:08"},
+            {"age_group": "Elderly", "come_in": "14/07/2025 20:20:20"},
             {"age_group": "Teen", "come_in": "23/07/2025 13:13:13"},
         ]
         for item in fake_data:
@@ -176,7 +207,8 @@ def init_fake_customers():
 async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
     time = datetime.now()
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-    path = f"imgs/{timestamp}.jpg"
+    # path = f"imgs/{timestamp}.jpg"
+    path = f"lo1.jpg"
     # Ghi file ảnh vào hệ thống
     with open(path, "wb") as f:
         f.write(data)
@@ -186,7 +218,7 @@ async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
 
     try:
         db.collection("customer").add({
-            "age_group": "",
+            "age_group": "Teen",
             "come_in": time,
             "image_path": path,               
             "image_base64": image_base64      
