@@ -131,7 +131,6 @@ def get_info_customers():
             else:
                 formatted_come_in = str(raw_come_in)
 
-            # 🌀 Đảo ngược ngày và tháng: dd/mm/yyyy -> mm/dd/yyyy
             try:
                 parts = formatted_come_in.split(" ")
                 date_parts = parts[0].split("/")
