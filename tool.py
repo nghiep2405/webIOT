@@ -1,14 +1,46 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 from fastapi import FastAPI, Request, HTTPException, Body
+from contextlib import asynccontextmanager
 import logging
 from pydantic import BaseModel
-from datetime import datetime
-from typing import List
+from datetime import datetime, timedelta
 from pytz import timezone, UTC
+from PIL import Image
 import base64
+from io import BytesIO
+# import torch
+# import torch.nn as nn
+# from torchvision.transforms import transforms
+# from deepface import DeepFace
+# import numpy as np
+# from torch.utils.data import DataLoader
+# import torchvision
+from concurrent.futures import ThreadPoolExecutor
+import asyncio  
+from google.cloud.firestore_v1.base_query import FieldFilter
 
-app = FastAPI()
+executor = ThreadPoolExecutor(max_workers=4)
+# net = None
+# device = "cpu"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global device
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # global net
+    # net = torchvision.models.resnet50()
+    # net.fc = nn.Linear(in_features=2048, out_features=4)
+    # net.load_state_dict(torch.load('models/model.pth'))
+    # net.to(device)
+    # yield
+    # net = None
+    
+enter_info = {
+    "time": []
+}
+
+app = FastAPI(lifespan=lifespan)
 
 try:
     # Load credentials
@@ -206,9 +238,12 @@ def init_fake_customers():
 async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
     time = datetime.now()
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-    # path = f"imgs/{timestamp}.jpg"
-    path = f"lo1.jpg"
-    # Ghi file ảnh vào hệ thống
+    
+    if (len(enter_info["time"]) > 0 and time.date() != enter_info["time"][-1]):
+        enter_info["time"].clear()
+
+    enter_info["time"].append(time)
+    path = f"imgs/{timestamp}.jpg"
     with open(path, "wb") as f:
         f.write(data)
 
@@ -227,3 +262,93 @@ async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
         raise HTTPException(status_code=500, detail="Error saving customer data")
     
     return {"Status": "Success"}
+
+@app.get("/get_enter")
+async def get_enter():
+    try:
+        data = enter_info["time"].copy()
+        l = len(data)
+        if l > 0:
+            enter_info["time"] = enter_info["time"][l:]
+        return {"time": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")
+    
+def base64_to_pil(b64_string: str) -> Image.Image:
+    # Nếu có prefix "data:image/...", hãy loại bỏ phần header này
+    if b64_string.startswith("data:image"):
+        b64_string = b64_string.split(",", 1)[1]
+    image_bytes = base64.b64decode(b64_string)
+    image_stream = BytesIO(image_bytes)
+    img = Image.open(image_stream)
+    return img
+
+# def run_model():
+#     start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+#     end = start + timedelta(days=1)
+
+#     filters = [
+#         FieldFilter("come_in", ">=", start),
+#         FieldFilter("come_in", "<", end)
+#     ]
+
+#     # Get customer data
+#     customers = (db.collection("customer")
+#         .select(["image_base64"])
+#         .where(filter=filters)
+#     ).stream()
+
+#     transform = transforms.Compose([
+#         transforms.Resize([224, 224]),
+#         transforms.ToTensor(),
+#         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#     ])
+
+#     face_list = []
+#     for customer in customers:
+#         im = base64_to_pil(customer)
+
+#         face_objs = DeepFace.extract_faces(img_path = np.array(im))
+
+#         faces = [Image.fromarray((f["face"] * 255).astype(np.uint8)[..., ::-1]) for f in face_objs]
+        
+#         face_list.extend(transform(f) for f in faces)
+
+
+#     batch = torch.stack(face_list)
+#     loader = DataLoader(batch, batch_size=32, shuffle=False)
+    
+
+#     net.eval()
+
+#     ou = []
+#     with torch.no_grad():
+#         for batch in loader:
+#             ou.append(net(batch.to(device)))
+
+#     output = torch.cat(ou)
+
+#     # Softmax để ra xác suất
+#     probabilities = torch.softmax(output, dim=1)
+#     print(probabilities)
+#     # Lấy class dự đoán cao nhất
+#     predicted_class = torch.argmax(probabilities, 1)
+#     # print(predicted_class.cpu())
+
+#     stat = {"children": 0, "teen": 0, "aldult": 0, "elderly": 0}
+
+#     # Đếm số lượng
+#     counts = np.bincount(predicted_class.cpu().numpy(), minlength=len(stat))
+#     for idx, key in enumerate(stat.keys()):
+#         stat[key] += counts[idx]
+    
+#     db.collection("analyze").add(stat)
+
+# @app.post("/analyze")
+# async def start_analyze():
+#     loop = asyncio.get_running_loop()
+#     loop.run_in_executor(executor, run_model)
+#     return {"status": "Queued"}
+
+
+# # API để lấy thông tin độ tuổi

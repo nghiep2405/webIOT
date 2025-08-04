@@ -120,10 +120,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 pages = [
-    st.Page("pages/overview/overview.py", title="Overview"),
     st.Page("pages/live_cam/live_cam.py", title="Live cam"),
     st.Page("pages/control/control.py", title="Control"),
     st.Page("pages/statistic/statistic.py", title="Statistic"),
+    st.Page("pages/overview/overview.py", title="About us"),
 ]
 
 if st.session_state.logged_in:
