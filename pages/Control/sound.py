@@ -82,7 +82,7 @@ def sound_controlUI():
             st.success(msg)
 
     # Thêm chú thích cuối trang
-    st.info("💡 **Lưu ý:** To view audio usage statistics and history, please visit the page **Statistics**.")
+    st.info("💡 **Notion:** To view audio usage statistics and history, please visit the page **Statistics**.")
 
 # Chạy giao diện
 sound_controlUI()
