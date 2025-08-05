@@ -9,7 +9,7 @@ def load_playlist():
     try:
         with open(PLAYLIST_FILE, "r") as file:
             files = [line.strip() for line in file.readlines() if line.strip()]
-        custom_names = ["Làm việc đi", "Hết giờ làm việc", "Báo cáo", "Có trộm đột nhập"]
+        custom_names = ["Làm việc đi", "Hết giờ làm việc", "Xin chào quý khách", "Có trộm đột nhập"]
         return list(zip(files, custom_names[:len(files)]))
     except FileNotFoundError:
         st.error("File playlist.txt not found! Please create it.")

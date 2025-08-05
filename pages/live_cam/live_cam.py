@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 
 # URL stream MJPEG từ ESP32-CAM
-ESP32_STREAM_URL = "http://10.234.86.186"  # Thay bằng IP thật của bạn
+ESP32_STREAM_URL = "http://192.168.1.7"  # Doi wifi thi xem lai o tren ESP32 - CAM
 
 st.title("Live View")
 

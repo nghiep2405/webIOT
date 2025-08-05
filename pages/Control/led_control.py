@@ -1,5 +1,4 @@
 import streamlit as st
-# from mqttService import mqtt_client
 import requests
 
 def led_controlUI():
@@ -47,8 +46,8 @@ def led_controlUI():
     # Thêm thanh trượt để điều chỉnh độ sáng LED
     led_intensity = st.slider("LED Brightness", 0, 255, 0)
 
-    # URL của ESP32-CAM (thay bằng địa chỉ IP thực tế của bạn)
-    esp32_ip = "http://192.168.217.184"
+    # Doi wifi thi xem lai o tren ESP32 - CAM
+    esp32_ip = "http://192.168.1.7"
 
     # Gửi giá trị độ sáng đến ESP32-CAM khi thay đổi
     if 'prev_intensity' not in st.session_state:

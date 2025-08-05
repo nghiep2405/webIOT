@@ -13,11 +13,19 @@
 #endif
 
 // LED FLASH setup
-#if defined(LED_GPIO_NUM)
+// #if defined(LED_GPIO_NUM)
+
+// Enable LED FLASH setting
+#define CONFIG_LED_ILLUMINATOR_ENABLED 1
+
+// LED FLASH setup
+#if CONFIG_LED_ILLUMINATOR_ENABLED
+
+#define LED_LEDC_GPIO            4  //configure LED pin
 #define CONFIG_LED_MAX_INTENSITY 255
 
 int led_duty = 0;
-bool isStreaming = false;
+bool isStreaming = true;
 
 #endif
 
@@ -37,7 +45,7 @@ httpd_handle_t camera_httpd = NULL;
 #if defined(LED_GPIO_NUM)
 void enable_led(bool en) {  // Turn LED On or Off
   int duty = en ? led_duty : 0;
-  if (en && isStreaming && (led_duty > CONFIG_LED_MAX_INTENSITY)) {
+  if (en && (led_duty > CONFIG_LED_MAX_INTENSITY)) {
     duty = CONFIG_LED_MAX_INTENSITY;
   }
   ledcWrite(LED_GPIO_NUM, duty);
@@ -198,8 +206,8 @@ static esp_err_t stream_handler(httpd_req_t *req) {
   }
 
 #if defined(LED_GPIO_NUM)
-  isStreaming = false;
-  enable_led(false);
+  isStreaming = true;
+  enable_led(true);
 #endif
 
   return res;
@@ -300,9 +308,7 @@ static esp_err_t cmd_handler(httpd_req_t *req) {
 #if defined(LED_GPIO_NUM)
   else if (!strcmp(variable, "led_intensity")) {
     led_duty = val;
-    if (isStreaming) {
-      enable_led(true);
-    }
+    enable_led(true);
   }
 #endif
   else {

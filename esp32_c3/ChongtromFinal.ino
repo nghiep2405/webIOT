@@ -5,16 +5,18 @@
 #include <PubSubClient.h> // Thêm thư viện MQTT
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include "HardwareSerial.h"
+#include "DFRobotDFPlayerMini.h"
+
+#define RX_PIN 20 //3 //20 vang
+#define TX_PIN 21 //1 //21 xanh
+
 
 // Thông tin Wi-Fi
-// const char* ssid = "IPhone";
-// const char* password = "nak050105";
 const char* ssid = "Silverwing Lost";
 const char* password = "10042005";
-const int CHANNEL = 0; // ESP-NOW channel, nên để 0 để tự động chọn
-
-// Địa chỉ MAC của ESP32-CAM
-const uint8_t  peer_mac[6]= {0x78, 0x21, 0x84, 0xE4, 0xAF, 0x08};
+const uint8_t  peer_mac[6]= {0x78, 0x21, 0x84, 0xE4, 0xB1, 0x08};
+const int CHANNEL = 0;
 
 // Thông tin ntfy (HTTP)
 const char* ntfy_server = "ntfy.sh";
@@ -27,6 +29,7 @@ const int mqtt_port = 1883;
 const char* mqtt_topic_schedule = "motion/notification/schedule";
 const char* mqtt_topic_time_range = "motion/notification/time_range";
 const char* mqtt_topic_status = "motion/notification/status";
+const char* mqtt_topic_audio = "audio/play/nhom5";
 
 // Cấu hình cảm biến PIR
 #define sensorA 2
@@ -51,10 +54,28 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org", 7 * 3600);
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
+HardwareSerial myHardwareSerial(1);
+DFRobotDFPlayerMini myDFPlayer; 
+
 void setup() {
   Serial.begin(9600);
   pinMode(sensorA, INPUT);
   pinMode(sensorB, INPUT);
+
+  myHardwareSerial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
+  delay(200);
+
+  if (!myDFPlayer.begin(myHardwareSerial, true, true)) {
+    Serial.println("Unable to begin:");
+    Serial.println("1. Please recheck the connection!");
+    Serial.println("2. Please insert the SD card!");
+    while(true) {
+      delay(1000);
+    }
+  }
+
+  myDFPlayer.setTimeOut(500);
+  myDFPlayer.volume(30);
   
   setup_wifi();
   timeClient.begin();
@@ -65,16 +86,17 @@ void setup() {
   connectMQTT();
   esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
   delay(100);
+
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
+
   esp_now_peer_info_t peer = {};
   memcpy(peer.peer_addr, peer_mac, 6);
   peer.channel = CHANNEL;
   peer.encrypt = false;
   esp_now_add_peer(&peer);
-
 }
 
 void setup_wifi() {
@@ -108,6 +130,8 @@ void connectMQTT() {
       mqttClient.subscribe(mqtt_topic_schedule);
       mqttClient.publish(mqtt_topic_status, notificationsEnabled ? "ON" : "OFF");
       mqttClient.subscribe(mqtt_topic_time_range);
+      mqttClient.subscribe(mqtt_topic_audio);
+      Serial.println("Join ok");
     } else {
       Serial.print("Lỗi kết nối MQTT, rc=");
       Serial.print(mqttClient.state());
@@ -146,6 +170,17 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
       Serial.print(startStr); Serial.print(" - "); Serial.println(endStr);
     }
   }
+  if (String(topic) == mqtt_topic_audio) { 
+    int fileNumber = message.toInt(); 
+    if (fileNumber > 0) { 
+      Serial.println("Playing file " + String(fileNumber)); 
+      myDFPlayer.play(fileNumber); // Play the selected file 
+    } 
+    else { 
+      Serial.println("Invalid file number!"); 
+    } 
+    Serial.println("Check audio");
+  } 
 }
 
 bool isWithinNotificationTime(int nowMin, int startMin, int endMin) {
@@ -253,19 +288,22 @@ bool detectMotion(
     return false;
 }
 
-
-const uint8_t* msg = 1;
+const char msg[] = "EVENT";
 bool first_time1 = true;
 
 void loop() {
   if (first_time1) {
-    unsigned long waitUntil = millis() + 120000;
+    unsigned long waitUntil = millis() + 12;
     while (millis() < waitUntil) {
       mqttClient.loop();
       delay(10);
     }
     first_time1 = false;
   }
+
+  if (!mqttClient.connected()) { 
+    connectMQTT(); 
+  } 
 
   timeClient.update();
   mqttClient.loop();
@@ -283,6 +321,7 @@ void loop() {
       if (esp_now_send(peer_mac, (uint8_t *) &msg, sizeof(msg)) != ESP_OK) {
         Serial.println("Send failed");
       }
+      Serial.println("999999999999");
       String message = "Motion Detected: A then B at ";
       message += String(timeClient.getHours()) + ":" + String(timeClient.getMinutes()) + ":" + String(timeClient.getSeconds());
       message += ", 11/06/2025!";

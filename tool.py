@@ -186,28 +186,6 @@ def get_info_customers():
 def init_fake_customers():
     try:
         fake_data = [
-            # {"age_group": "Elderly", "come_in": "25/07/2025 07:38:22"},
-            # {"age_group": "Children", "come_in": "24/07/2025 22:23:05"},
-            # {"age_group": "Teen", "come_in": "24/07/2025 10:15:00"},
-            # {"age_group": "Adult", "come_in": "25/07/2025 14:45:30"},
-            # {"age_group": "Elderly", "come_in": "26/07/2025 09:00:00"},
-            # {"age_group": "Adult", "come_in": "26/07/2025 16:20:10"},
-            # {"age_group": "Teen", "come_in": "27/07/2025 11:11:11"},
-            # {"age_group": "Children", "come_in": "27/07/2025 08:08:08"},
-            # {"age_group": "Elderly", "come_in": "27/07/2025 20:20:20"},
-            # {"age_group": "Teen", "come_in": "27/07/2025 13:13:13"},
-            
-            # {"age_group": "Elderly", "come_in": "27/07/2025 07:38:22"},
-            # {"age_group": "Children", "come_in": "28/07/2025 22:23:05"},
-            # {"age_group": "Teen", "come_in": "28/07/2025 10:15:00"},
-            # {"age_group": "Adult", "come_in": "29/07/2025 14:45:30"},
-            # {"age_group": "Elderly", "come_in": "29/07/2025 09:00:00"},
-            # {"age_group": "Adult", "come_in": "30/07/2025 16:20:10"},
-            # {"age_group": "Teen", "come_in": "1/08/2025 11:11:11"},
-            # {"age_group": "Children", "come_in": "1/08/2025 08:08:08"},
-            # {"age_group": "Elderly", "come_in": "2/08/2025 20:20:20"},
-            # {"age_group": "Teen", "come_in": "3/08/2025 13:13:13"},
-
             {"age_group": "Elderly", "come_in": "23/07/2025 07:38:22"},
             {"age_group": "Children", "come_in": "21/07/2025 22:23:05"},
             {"age_group": "Teen", "come_in": "20/07/2025 10:15:00"},

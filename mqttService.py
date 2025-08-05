@@ -7,7 +7,7 @@ MQTT_PORT = 1883
 MQTT_PIR_TOPIC = "sensor/pir"
 MQTT_CAMERA_IP_TOPIC = "esp32/camera_ip"
 MQTT_MOTION_SCHEDULE_TOPIC = "motion/notification/time_range"
-MQTT_SONG_TOPIC = "audio/play"
+MQTT_SONG_TOPIC = "audio/play/nhom5"
 
 # Initialize MQTT client
 mqtt_client = mqtt.Client(client_id="", protocol=mqtt.MQTTv311)

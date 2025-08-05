@@ -5,28 +5,27 @@
 #include <esp_now.h>
 #include "board_config.h"
 #include <WiFiManager.h>
-#include <PubSubClient.h> 
-#include "HardwareSerial.h" 
-#include "DFRobotDFPlayerMini.h"
+// #include <PubSubClient.h> 
+// #include "HardwareSerial.h" 
+// #include "DFRobotDFPlayerMini.h"
 
-#define RX_PIN 3 // RX pin for DFPlayer 
-#define TX_PIN 1 // TX pin for DFPlayer
+// #define RX_PIN 3 // RX pin for DFPlayer 
+// #define TX_PIN 1 // TX pin for DFPlayer
 
-// Wifi and server
-const char *ssid = "IPhone";
-const char *password = "nak050105";
-const char *postServer = "http://172.20.10.2:8000/upload/";
+// // Wifi and server
+// const char *ssid = "IPhone";
+// const char *password = "nak050105";
+// const char *postServer = "http://172.20.10.2:8000/upload/";
 
+// // MQTT configuration 
+// const char* mqtt_server = "broker.emqx.io"; // Public MQTT broker 
+// const int mqtt_port = 1883; 
+// const char* mqtt_topic = "audio/play"; // Topic to receive audio file commands
 
-// MQTT configuration 
-const char* mqtt_server = "broker.emqx.io"; // Public MQTT broker 
-const int mqtt_port = 1883; 
-const char* mqtt_topic = "audio/play"; // Topic to receive audio file commands
-
-HardwareSerial myHardwareSerial(1); // UART1 for DFPlayer 
-DFRobotDFPlayerMini myDFPlayer; 
-WiFiClient wifiClient; 
-PubSubClient mqttClient(wifiClient);
+// HardwareSerial myHardwareSerial(1); // UART1 for DFPlayer 
+// DFRobotDFPlayerMini myDFPlayer; 
+// WiFiClient wifiClient; 
+// PubSubClient mqttClient(wifiClient);
 
 void startCameraServer();
 void setupLedFlash();
@@ -71,66 +70,65 @@ void sendPhotoHTTP(camera_fb_t *fb) {
 //   } 
 // }
 
-void connectMQTT() { 
-  while (!mqttClient.connected()) { 
-    Serial.println("Connecting to MQTT..."); 
-    String clientId = "ArduinoClient-" + String(random(0xffff), HEX); 
-    if (mqttClient.connect(clientId.c_str())) { 
-      Serial.println("MQTT connected!"); 
-      mqttClient.subscribe(mqtt_topic); // Subscribe to audio play topic 
-    } 
-    else { 
-      Serial.print("MQTT connection failed, rc="); 
-      Serial.print(mqttClient.state()); 
-      Serial.println(" Retrying in 5 seconds..."); 
-      delay(5000); 
-    } 
-  }
-}
+// void connectMQTT() { 
+//   while (!mqttClient.connected()) { 
+//     Serial.println("Connecting to MQTT..."); 
+//     String clientId = "ArduinoClient-" + String(random(0xffff), HEX); 
+//     if (mqttClient.connect(clientId.c_str())) { 
+//       Serial.println("MQTT connected!"); 
+//       mqttClient.subscribe(mqtt_topic); // Subscribe to audio play topic 
+//     } 
+//     else { 
+//       Serial.print("MQTT connection failed, rc="); 
+//       Serial.print(mqttClient.state()); 
+//       Serial.println(" Retrying in 5 seconds..."); 
+//       delay(5000); 
+//     } 
+//   }
+// }
 
-void mqttCallback(char* topic, byte* payload, unsigned int length) { 
-  String message; 
-  for (unsigned int i = 0; i < length; i++) { 
-    message += (char)payload[i]; 
-  } 
-  Serial.println("Received MQTT: " + String(topic) + " - " + message);
+// void mqttCallback(char* topic, byte* payload, unsigned int length) { 
+//   String message; 
+//   for (unsigned int i = 0; i < length; i++) { 
+//     message += (char)payload[i]; 
+//   } 
+//   Serial.println("Received MQTT: " + String(topic) + " - " + message);
 
-  if (String(topic) == mqtt_topic) { 
-    int fileNumber = message.toInt(); 
-    if (fileNumber > 0) { 
-      Serial.println("Playing file " + String(fileNumber)); 
-      myDFPlayer.play(fileNumber); // Play the selected file 
-    } 
-    else { 
-      Serial.println("Invalid file number!"); 
-    } 
-  } 
-}
+//   if (String(topic) == mqtt_topic) { 
+//     int fileNumber = message.toInt(); 
+//     if (fileNumber > 0) { 
+//       Serial.println("Playing file " + String(fileNumber)); 
+//       myDFPlayer.play(fileNumber); // Play the selected file 
+//     } 
+//     else { 
+//       Serial.println("Invalid file number!"); 
+//     } 
+//   } 
+// }
 
 void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
 
-  
-  myHardwareSerial.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN); delay(200);
+  // myHardwareSerial.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN); delay(200);
 
-  if (!myDFPlayer.begin(myHardwareSerial, true, true)) { 
-    Serial.println("Unable to begin:"); 
-    Serial.println("1. Please recheck the connection!"); 
-    Serial.println("2. Please insert the SD card!"); 
-    while(true) { 
-      delay(1000); // Halt program 
-    } 
-  }
+  // if (!myDFPlayer.begin(myHardwareSerial, true, true)) { 
+  //   Serial.println("Unable to begin:"); 
+  //   Serial.println("1. Please recheck the connection!"); 
+  //   Serial.println("2. Please insert the SD card!"); 
+  //   while(true) { 
+  //     delay(1000); // Halt program 
+  //   } 
+  // }
 
-  myDFPlayer.setTimeOut(500); 
-  myDFPlayer.volume(15); // Set volume (0-30)
+  // myDFPlayer.setTimeOut(500); 
+  // myDFPlayer.volume(15); // Set volume (0-30)
 
-  //setup_wifi(); // Connect to Wi-Fi 
-  mqttClient.setServer(mqtt_server, mqtt_port); 
-  mqttClient.setCallback(mqttCallback); // Set MQTT callback 
-  connectMQTT(); // Connect to MQTT 
+  // //setup_wifi(); // Connect to Wi-Fi 
+  // mqttClient.setServer(mqtt_server, mqtt_port); 
+  // mqttClient.setCallback(mqttCallback); // Set MQTT callback 
+  // connectMQTT(); // Connect to MQTT 
 
   // Accesspoint
   Serial.println("Connected wifiManager");
@@ -214,17 +212,6 @@ void setup() {
   setupLedFlash();
 #endif
 
-  // WiFi.begin(ssid, password);
-  // WiFi.setSleep(false);
-
-  // Serial.print("WiFi connecting");
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   delay(500);
-  //   Serial.print(".");
-  // }
-  // Serial.println("");
-  // Serial.println("WiFi connected");
-
   startCameraServer();
 
   Serial.print("Camera Ready! Use 'http://");
@@ -239,12 +226,7 @@ void setup() {
 }
 
 void loop() {
-  if (!mqttClient.connected()) { 
-    connectMQTT(); 
-  } 
   // Do nothing. Everything is done in another task by the web server
-  mqttClient.loop(); // Process MQTT messages 
-  delay(100); // Small delay to avoid overloading 
   if (captureRequested) {
     Serial.println("Sent");
     captureRequested = false;
