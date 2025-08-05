@@ -1,4 +1,3 @@
-
 import streamlit as st
 from pages.login_register.login import login_ui 
 from pages.login_register.register import register_ui

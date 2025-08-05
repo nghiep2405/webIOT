@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 
 # URL stream MJPEG từ ESP32-CAM
-ESP32_STREAM_URL = "http://172.20.10.3"  # Thay bằng IP thật của bạn
+ESP32_STREAM_URL = "http://10.234.86.186"  # Thay bằng IP thật của bạn
 
 st.title("Live View")
 
@@ -20,16 +20,28 @@ with left:
     )
 
 if "enter" not in st.session_state:
-    st.session_state.enter = {"time":[]}
+    st.session_state.enter = {"Timestamp":[]}
 
 @st.fragment(run_every=5)
 def people_enter():
-    response = requests.get(f"http://127.0.0.1:8000/get_enter").json()
-    st.session_state.enter["time"].extend(response["time"])
-    if len(st.session_state.enter["time"]) > 200:
-        st.session_state.enter["time"] = st.session_state.enter["time"][100:]
+    # Gửi yêu cầu GET và lấy phản hồi
+    response = requests.get("http://127.0.0.1:8000/get_enter").json()
+    
+    # Thêm thời gian vào danh sách
+    st.session_state.enter["Timestamp"].extend(response["Timestamp"])
 
-    st.dataframe(pd.DataFrame(st.session_state.enter), width=300, height=500)
+    # Giới hạn số lượng mục
+    if len(st.session_state.enter["Timestamp"]) > 200:
+        st.session_state.enter["Timestamp"] = st.session_state.enter["Timestamp"][100:]
+
+    # Chuyển đổi danh sách thời gian sang DataFrame
+    time_data = pd.DataFrame(st.session_state.enter)
+    
+    # Định dạng cột thời gian
+    time_data['Timestamp'] = pd.to_datetime(time_data['Timestamp'])
+
+    # Hiển thị DataFrame đã định dạng
+    st.dataframe(time_data, width=300, height=500)
 
 with right:
     people_enter()

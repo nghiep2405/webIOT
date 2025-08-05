@@ -26,18 +26,18 @@ executor = ThreadPoolExecutor(max_workers=4)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global device
+    # global device
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # global net
     # net = torchvision.models.resnet50()
     # net.fc = nn.Linear(in_features=2048, out_features=4)
     # net.load_state_dict(torch.load('models/model.pth'))
     # net.to(device)
-    # yield
+    yield
     # net = None
     
 enter_info = {
-    "time": []
+    "Timestamp": []
 }
 
 app = FastAPI(lifespan=lifespan)
@@ -238,11 +238,11 @@ def init_fake_customers():
 async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
     time = datetime.now()
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-    
-    if (len(enter_info["time"]) > 0 and time.date() != enter_info["time"][-1]):
-        enter_info["time"].clear()
 
-    enter_info["time"].append(time)
+    if (len(enter_info["Timestamp"]) > 0 and time.date() != enter_info["Timestamp"][-1]):
+        enter_info["Timestamp"].clear()
+
+    enter_info["Timestamp"].append(time)
     path = f"imgs/{timestamp}.jpg"
     with open(path, "wb") as f:
         f.write(data)
@@ -266,11 +266,11 @@ async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
 @app.get("/get_enter")
 async def get_enter():
     try:
-        data = enter_info["time"].copy()
+        data = enter_info["Timestamp"].copy()
         l = len(data)
         if l > 0:
-            enter_info["time"] = enter_info["time"][l:]
-        return {"time": data}
+            enter_info["Timestamp"] = enter_info["Timestamp"][l:]
+        return {"Timestamp": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")
     

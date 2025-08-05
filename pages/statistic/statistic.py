@@ -3,7 +3,6 @@ import pandas as pd
 import altair as alt
 import requests
 import time
-import numpy as np
 
 API_BASE_URL = "http://localhost:8000"
 

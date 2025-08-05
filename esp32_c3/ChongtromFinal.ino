@@ -7,9 +7,11 @@
 #include <esp_wifi.h>
 
 // Thông tin Wi-Fi
-const char* ssid = "IPhone";
-const char* password = "nak050105";
-const int CHANNEL = 0;
+// const char* ssid = "IPhone";
+// const char* password = "nak050105";
+const char* ssid = "Silverwing Lost";
+const char* password = "10042005";
+const int CHANNEL = 0; // ESP-NOW channel, nên để 0 để tự động chọn
 
 // Địa chỉ MAC của ESP32-CAM
 const uint8_t  peer_mac[6]= {0x78, 0x21, 0x84, 0xE4, 0xAF, 0x08};
@@ -281,7 +283,6 @@ void loop() {
       if (esp_now_send(peer_mac, (uint8_t *) &msg, sizeof(msg)) != ESP_OK) {
         Serial.println("Send failed");
       }
-      Serial.println("999999999999");
       String message = "Motion Detected: A then B at ";
       message += String(timeClient.getHours()) + ":" + String(timeClient.getMinutes()) + ":" + String(timeClient.getSeconds());
       message += ", 11/06/2025!";
