@@ -5,7 +5,7 @@ import datetime
 def send_motion_schedule_string(start_time: str, end_time: str):
     try:
         time_range_str = f"{start_time}-{end_time}"
-        mqtt_client.publish("motion/notification/time_range", time_range_str, qos=1)
+        mqtt_client.publish("motion/notification/time_rangeeeee", time_range_str, qos=1)
         st.success(f"Anti-theft time sent: {time_range_str}")
     except Exception as e:
         st.error(f"Error sending anti-theft time: {e}")

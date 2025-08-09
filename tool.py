@@ -172,7 +172,6 @@ def get_info_customers():
                 pass  # fallback nếu lỗi split
 
             customers_list.append({
-                "age_group": data.get("age_group", ""),
                 "come_in": formatted_come_in,
             })
 
@@ -180,37 +179,82 @@ def get_info_customers():
         return {"customers": customers_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")
-    
+
+@app.get("/get-info-age-customers")
+def get_info_age_customers():
+    try:
+        customers_ref = db.collection("ageCustomer").order_by("date", direction=firestore.Query.DESCENDING)
+        #customers_ref = db.collection("Customer_classification").order_by("date", direction=firestore.Query.DESCENDING)
+        docs = customers_ref.stream()
+
+        customers_list = []
+        for doc in docs:
+            data = doc.to_dict()
+            raw_date = data.get("date", None)
+            formatted_date = ""
+
+            tz_vn = timezone("Asia/Ho_Chi_Minh")
+            if isinstance(raw_date, datetime):
+                if raw_date.tzinfo is None:
+                    raw_date = UTC.localize(raw_date)
+                dt_vn = raw_date.astimezone(tz_vn)
+                formatted_date = dt_vn.strftime("%d/%m/%Y %H:%M:%S")
+            else:
+                formatted_date = str(raw_date)
+
+            try:
+                parts = formatted_date.split(" ")
+                date_parts = parts[0].split("/")
+                reversed_date = f"{date_parts[1]}/{date_parts[0]}/{date_parts[2]}"
+                formatted_date = f"{reversed_date} {parts[1]}"
+            except Exception:
+                pass
+
+            customers_list.append({
+                "adult": int(data.get("adult", 0)),
+                "children": int(data.get("children", 0)),
+                "elderly": int(data.get("elderly", 0)),
+                "teen": int(data.get("teen", 0)),
+                "date": formatted_date,
+            })
+
+        return {"age_customers": customers_list}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting age customer info: {str(e)}")
+
 # API để khởi tạo dữ liệu khách hàng ảo
 @app.post("/init-fake-customers")
 def init_fake_customers():
     try:
         fake_data = [
-            {"age_group": "Elderly", "come_in": "23/07/2025 07:38:22"},
-            {"age_group": "Children", "come_in": "21/07/2025 22:23:05"},
-            {"age_group": "Teen", "come_in": "20/07/2025 10:15:00"},
-            {"age_group": "Adult", "come_in": "19/07/2025 14:45:30"},
-            {"age_group": "Elderly", "come_in": "18/07/2025 09:00:00"},
-            {"age_group": "Adult", "come_in": "17/07/2025 16:20:10"},
-            {"age_group": "Teen", "come_in": "16/07/2025 11:11:11"},
-            {"age_group": "Children", "come_in": "15/07/2025 08:08:08"},
-            {"age_group": "Elderly", "come_in": "14/07/2025 20:20:20"},
-            {"age_group": "Teen", "come_in": "23/07/2025 13:13:13"},
+            "23/07/2025 07:38:22",
+            "21/07/2025 22:23:05",
+            "20/07/2025 10:15:00",
+            "19/07/2025 14:45:30",
+            "18/07/2025 09:00:00",
+            "17/07/2025 16:20:10",
+            "16/07/2025 11:11:11",
+            "15/07/2025 08:08:08",
+            "14/07/2025 20:20:20",
+            "23/07/2025 13:13:13",
         ]
-        for item in fake_data:
-            # Lưu vào Firestore, parse come_in sang datetime nếu cần
+
+        for date_str in fake_data:
             try:
-                come_in_dt = datetime.strptime(item["come_in"], "%d/%m/%Y %H:%M:%S")
+                come_in_dt = datetime.strptime(date_str, "%d/%m/%Y %H:%M:%S")
             except Exception:
-                come_in_dt = item["come_in"]
+                come_in_dt = date_str
+
             db.collection("customer").add({
-                "age_group": item["age_group"],
                 "come_in": come_in_dt
             })
-        return {"message": "Fake customers initialized successfully", "count": len(fake_data)}
+
+        return {
+            "message": "Fake customers initialized successfully",
+            "count": len(fake_data)
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error initializing fake customers: {str(e)}")
-    
 
 @app.post("/upload/")
 async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
@@ -230,7 +274,6 @@ async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
 
     try:
         db.collection("customer").add({
-            "age_group": "Teen",
             "come_in": time,
             "image_path": path,               
             "image_base64": image_base64      
