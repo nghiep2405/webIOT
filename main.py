@@ -1,4 +1,3 @@
-
 import streamlit as st
 from pages.login_register.login import login_ui 
 from pages.login_register.register import register_ui
@@ -120,10 +119,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 pages = [
-    st.Page("pages/overview/overview.py", title="Overview"),
     st.Page("pages/live_cam/live_cam.py", title="Live cam"),
     st.Page("pages/control/control.py", title="Control"),
     st.Page("pages/statistic/statistic.py", title="Statistic"),
+    st.Page("pages/overview/overview.py", title="About us"),
 ]
 
 if st.session_state.logged_in:
@@ -144,7 +143,7 @@ if st.session_state.logged_in:
         st.markdown("---")
         st.markdown("<div style='flex: 1;'></div>", unsafe_allow_html=True)
         st.markdown('<div style="width: 100%; padding: 0; margin: 0;">', unsafe_allow_html=True)
-        if st.button("🚪 Đăng xuất", key="sidebar_logout", use_container_width=True):
+        if st.button("🚪 Log out", key="sidebar_logout", use_container_width=True):
             st.query_params["logout"] = "true"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)

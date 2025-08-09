@@ -1,9 +1,8 @@
 import streamlit as st
-# from mqttService import mqtt_client
 import requests
 
 def led_controlUI():
-    st.subheader("💡 Điều khiển LED (ESP32)")   
+    st.subheader("💡 Control LED (ESP32)")
 
     # Thêm CSS tùy chỉnh - chỉ áp dụng cho LED control section
     st.markdown(
@@ -47,8 +46,8 @@ def led_controlUI():
     # Thêm thanh trượt để điều chỉnh độ sáng LED
     led_intensity = st.slider("LED Brightness", 0, 255, 0)
 
-    # URL của ESP32-CAM (thay bằng địa chỉ IP thực tế của bạn)
-    esp32_ip = "http://192.168.217.184"
+    # Doi wifi thi xem lai o tren ESP32 - CAM
+    esp32_ip = "http://10.148.74.186" # Silverwing Lost
 
     # Gửi giá trị độ sáng đến ESP32-CAM khi thay đổi
     if 'prev_intensity' not in st.session_state:
@@ -67,12 +66,12 @@ def led_controlUI():
         st.session_state.prev_intensity = led_intensity
 
     # Thêm một số thông tin bổ sung
-    with st.expander("ℹ️ Thông tin ESP32"):
+    with st.expander("ℹ️ Information ESP32"):
         st.markdown(f"""
         <div class="led-info-section">
-            <strong>📡 Địa chỉ IP:</strong> {esp32_ip}<br><br>
-            <strong>🔗 Trạng thái:</strong> {'🟢 Kết nối' if st.session_state.get('prev_intensity', 0) >= 0 else '🔴 Ngắt kết nối'}<br><br>
-            <strong>💡 Độ sáng hiện tại:</strong> {led_intensity}/255 ({round(led_intensity/255*100, 1)}%)
+            <strong>📡 IP Address:</strong> {esp32_ip}<br><br>
+            <strong>🔗 Status:</strong> {'🟢 Connected' if st.session_state.get('prev_intensity', 0) >= 0 else '🔴 Disconnected'}<br><br>
+            <strong>💡 Current Brightness:</strong> {led_intensity}/255 ({round(led_intensity/255*100, 1)}%)
         </div>
         """, unsafe_allow_html=True)
     

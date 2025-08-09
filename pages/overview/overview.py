@@ -1,7 +1,7 @@
 import streamlit as st
 
 def overview_ui():
-    st.title("Overview")
+    st.title("About us")
     st.write("""Welcome to our IoT website!
 This is the final project of Group 5, consisting of members Nguyễn Anh Khoa, Nguyễn An Nghiệp, and Trần Hoài Thiện Nhân. The project is supervised by instructors Bùi Thanh Lâm, Cao Xuân Nam, and Đặng Hoài Thương.
 
