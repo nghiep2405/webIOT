@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 
 # URL stream MJPEG từ ESP32-CAM
-ESP32_STREAM_URL = "http://192.168.1.7"  # Doi wifi thi xem lai o tren ESP32 - CAM
+ESP32_STREAM_URL = "http://10.148.74.186"  # Doi wifi thi xem lai o tren ESP32 - CAM Silverwing Lost
 
 st.title("Live View")
 

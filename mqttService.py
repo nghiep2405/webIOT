@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import streamlit as st
 
 # MQTT configuration
-MQTT_BROKER = "broker.emqx.io"
+MQTT_BROKER = "10.148.74.205" # ipv4 cua may nhan mang silverwing lost
 MQTT_PORT = 1883
 MQTT_PIR_TOPIC = "sensor/pir"
 MQTT_CAMERA_IP_TOPIC = "esp32/camera_ip"

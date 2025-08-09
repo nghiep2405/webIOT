@@ -230,7 +230,6 @@ async def upload_raw_image(data: bytes = Body(..., media_type="image/jpeg")):
 
     try:
         db.collection("customer").add({
-            "age_group": "Teen",
             "come_in": time,
             "image_path": path,               
             "image_base64": image_base64      

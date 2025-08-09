@@ -24,7 +24,9 @@ const char* ntfy_topic = "ngu";
 const int http_port = 80;
 
 // Thông tin MQTT
-const char* mqtt_server = "broker.emqx.io";
+//const char* mqtt_server = "broker.emqx.io";
+//const char* mqtt_server = "broker.hivemq.com";
+const char* mqtt_server = "10.148.74.205"; //ipv4 cua may nhan mang silverwing lost
 const int mqtt_port = 1883;
 const char* mqtt_topic_schedule = "motion/notification/schedule";
 const char* mqtt_topic_time_range = "motion/notification/time_range";
@@ -83,7 +85,7 @@ void setup() {
   mqttClient.setServer(mqtt_server, mqtt_port);
   mqttClient.setCallback(mqttCallback);
   delay(1000);
-  connectMQTT();
+
   esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
   delay(100);
 
@@ -170,7 +172,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
       Serial.print(startStr); Serial.print(" - "); Serial.println(endStr);
     }
   }
-  if (String(topic) == mqtt_topic_audio) { 
+  else if (String(topic) == mqtt_topic_audio) { 
     int fileNumber = message.toInt(); 
     if (fileNumber > 0) { 
       Serial.println("Playing file " + String(fileNumber)); 
@@ -324,7 +326,14 @@ void loop() {
       Serial.println("999999999999");
       String message = "Motion Detected: A then B at ";
       message += String(timeClient.getHours()) + ":" + String(timeClient.getMinutes()) + ":" + String(timeClient.getSeconds());
-      message += ", 11/06/2025!";
+      time_t rawTime = timeClient.getEpochTime();
+      struct tm * timeInfo = localtime(&rawTime);
+
+      char dateStr[11]; // dd/mm/yyyy\0
+      sprintf(dateStr, "%02d/%02d/%04d", timeInfo->tm_mday, timeInfo->tm_mon + 1, timeInfo->tm_year + 1900);
+
+      message += ", ";
+      message += String(dateStr) + "!";
       sendNtfyNotification(message);
       mqttClient.publish("motion/notification/event", message.c_str());
       Serial.println("Thông báo: " + message);

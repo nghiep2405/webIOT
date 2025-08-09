@@ -47,7 +47,7 @@ def led_controlUI():
     led_intensity = st.slider("LED Brightness", 0, 255, 0)
 
     # Doi wifi thi xem lai o tren ESP32 - CAM
-    esp32_ip = "http://192.168.1.7"
+    esp32_ip = "http://10.148.74.186" # Silverwing Lost
 
     # Gửi giá trị độ sáng đến ESP32-CAM khi thay đổi
     if 'prev_intensity' not in st.session_state:
