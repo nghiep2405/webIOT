@@ -9,16 +9,16 @@ from pytz import timezone, UTC
 from PIL import Image
 import base64
 from io import BytesIO
-# import torch
-# import torch.nn as nn
-# from torchvision.transforms import transforms
-# from deepface import DeepFace
-# import numpy as np
-# from torch.utils.data import DataLoader
-# import torchvision
+import torch
+import torch.nn as nn
+from torchvision.transforms import transforms
+from deepface import DeepFace
+import numpy as np
+from torch.utils.data import DataLoader
+import torchvision
 from concurrent.futures import ThreadPoolExecutor
 import asyncio  
-from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud.firestore_v1.base_query import FieldFilter, And
 
 executor = ThreadPoolExecutor(max_workers=4)
 # net = None
@@ -26,15 +26,15 @@ executor = ThreadPoolExecutor(max_workers=4)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # global device
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # global net
-    # net = torchvision.models.resnet50()
-    # net.fc = nn.Linear(in_features=2048, out_features=4)
-    # net.load_state_dict(torch.load('models/model.pth'))
-    # net.to(device)
+    global device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    global net
+    net = torchvision.models.resnet50()
+    net.fc = nn.Linear(in_features=2048, out_features=4)
+    net.load_state_dict(torch.load('models/model.pth'))
+    net.to(device)
     yield
-    # net = None
+    net = None
     
 enter_info = {
     "Timestamp": []
@@ -252,80 +252,90 @@ async def get_enter():
         raise HTTPException(status_code=500, detail=f"Error getting customer info: {str(e)}")
     
 def base64_to_pil(b64_string: str) -> Image.Image:
-    # Nếu có prefix "data:image/...", hãy loại bỏ phần header này
     if b64_string.startswith("data:image"):
         b64_string = b64_string.split(",", 1)[1]
     image_bytes = base64.b64decode(b64_string)
+
     image_stream = BytesIO(image_bytes)
     img = Image.open(image_stream)
     return img
 
-# def run_model():
-#     start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-#     end = start + timedelta(days=1)
+def run_model():
+    start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=1)
 
-#     filters = [
-#         FieldFilter("come_in", ">=", start),
-#         FieldFilter("come_in", "<", end)
-#     ]
+    filters = And([
+        FieldFilter("come_in", ">=", start),
+        FieldFilter("come_in", "<", end)
+    ])
 
-#     # Get customer data
-#     customers = (db.collection("customer")
-#         .select(["image_base64"])
-#         .where(filter=filters)
-#     ).stream()
+    customers = (
+        db.collection("customer")
+        .select(["image_base64"])
+        .where(filter=filters)
+        .stream()
+    )
 
-#     transform = transforms.Compose([
-#         transforms.Resize([224, 224]),
-#         transforms.ToTensor(),
-#         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-#     ])
+    transform = transforms.Compose([
+        transforms.Resize([224, 224]),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    ])
 
-#     face_list = []
-#     for customer in customers:
-#         im = base64_to_pil(customer)
+    face_list = []
+    for customer in customers:
+        data = customer.to_dict()
+        image_base64 = data["image_base64"]  # Lấy chuỗi base64 từ document
+        im = base64_to_pil(image_base64)
 
-#         face_objs = DeepFace.extract_faces(img_path = np.array(im))
+        im_np = np.array(im)[..., ::-1]
 
-#         faces = [Image.fromarray((f["face"] * 255).astype(np.uint8)[..., ::-1]) for f in face_objs]
+        face_objs = DeepFace.extract_faces(img_path=im_np, enforce_detection=False)
+
+        faces = [Image.fromarray((f["face"] * 255).astype(np.uint8)) for f in face_objs]
         
-#         face_list.extend(transform(f) for f in faces)
+        face_list.extend(transform(f) for f in faces)
 
-
-#     batch = torch.stack(face_list)
-#     loader = DataLoader(batch, batch_size=32, shuffle=False)
+    if face_list:
+        batch = torch.stack(face_list)
+    else:
+        batch = torch.empty((0, 3, 224, 224), dtype=torch.float32)
+    loader = DataLoader(batch, batch_size=32, shuffle=False)
     
 
-#     net.eval()
+    net.eval()
 
-#     ou = []
-#     with torch.no_grad():
-#         for batch in loader:
-#             ou.append(net(batch.to(device)))
+    ou = []
+    with torch.no_grad():
+        for batch in loader:
+            ou.append(net(batch.to(device)))
 
-#     output = torch.cat(ou)
+    if ou:
+        output = torch.cat(ou)
+    else:
+        output = torch.empty((0, 4), device=device)
 
-#     # Softmax để ra xác suất
-#     probabilities = torch.softmax(output, dim=1)
-#     print(probabilities)
-#     # Lấy class dự đoán cao nhất
-#     predicted_class = torch.argmax(probabilities, 1)
-#     # print(predicted_class.cpu())
+    # Softmax để ra xác suất
+    probabilities = torch.softmax(output, dim=1)
+    # Lấy class dự đoán cao nhất
+    predicted_class = torch.argmax(probabilities, 1)
 
-#     stat = {"children": 0, "teen": 0, "aldult": 0, "elderly": 0}
+    stat = {"children": 0, "teen": 0, "aldult": 0, "elderly": 0}
 
-#     # Đếm số lượng
-#     counts = np.bincount(predicted_class.cpu().numpy(), minlength=len(stat))
-#     for idx, key in enumerate(stat.keys()):
-#         stat[key] += counts[idx]
-    
-#     db.collection("analyze").add(stat)
+    # Đếm số lượng
+    counts = np.bincount(predicted_class.cpu().numpy(), minlength=len(stat))
+    for idx, key in enumerate(stat.keys()):
+        stat[key] += int(counts[idx])
+        
+    store = {"date": start, **stat}
 
-# @app.post("/analyze")
-# async def start_analyze():
-#     loop = asyncio.get_running_loop()
-#     loop.run_in_executor(executor, run_model)
-#     return {"status": "Queued"}
+    db.collection("analyze").add(store)
+
+@app.post("/analyze")
+async def start_analyze():
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(executor, run_model)
+    return {"Status": "Queued"}
 
 
-# # API để lấy thông tin độ tuổi
+# API để lấy thông tin độ tuổi
