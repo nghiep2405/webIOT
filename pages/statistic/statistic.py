@@ -38,14 +38,27 @@ def count_total_age_groups(customers):
         print("Lỗi tạo DataFrame:", e)
         return pd.DataFrame(columns=["Age Group", "Count"])
     
-    if df.empty or "age_group" not in df.columns:
+    if df.empty:
         return pd.DataFrame(columns=["Age Group", "Count"])
 
-    df["Age Group"] = df["age_group"]
-    age_order = ["Children", "Teen", "Adult", "Elderly"]
-    counts = df["Age Group"].value_counts().reindex(age_order, fill_value=0)
+    # Đảm bảo các cột tồn tại, nếu không thì tạo với giá trị 0
+    for col in ["children", "teen", "adult", "elderly"]:
+        if col not in df.columns:
+            df[col] = 0
 
-    return pd.DataFrame({"Age Group": counts.index, "Count": counts.values})
+    # Tính tổng số lượng theo từng nhóm tuổi
+    total_children = df["children"].sum()
+    total_teen = df["teen"].sum()
+    total_adult = df["adult"].sum()
+    total_elderly = df["elderly"].sum()
+
+    # Tạo DataFrame kết quả
+    age_order = ["Children", "Teen", "Adult", "Elderly"]
+    counts = [total_children, total_teen, total_adult, total_elderly]
+
+    return pd.DataFrame({"Age Group": age_order, "Count": counts})
+
+
 
 def count_age_group_per_day(customers):
     try:
@@ -54,20 +67,27 @@ def count_age_group_per_day(customers):
         print("Lỗi tạo DataFrame:", e)
         return pd.DataFrame(columns=["Date", "Children", "Teen", "Adult", "Elderly"])
     
-    if df.empty or not {"come_in", "age_group"}.issubset(df.columns):
+    if df.empty or "date" not in df.columns:
         return pd.DataFrame(columns=["Date", "Children", "Teen", "Adult", "Elderly"])
 
-    # Tạo result
-    df["Date"] = pd.to_datetime(df["come_in"], errors="coerce").dt.date
-    df["Age Group"] = df["age_group"]
+    # Chuyển date sang kiểu datetime (lấy phần ngày)
+    df["Date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
 
-    grouped = df.groupby(["Date", "Age Group"]).size().unstack(fill_value=0)
-    for col in ["Children", "Teen", "Adult", "Elderly"]:
-        if col not in grouped.columns:
-            grouped[col] = 0
-    grouped = grouped[["Children", "Teen", "Adult", "Elderly"]].reset_index()
-    
-    # Bổ sung các ngày bị thiếu (đảm bảo đến hôm qua)
+    # Đảm bảo tồn tại các cột nhóm tuổi, nếu thiếu thì tạo = 0
+    for col in ["children", "teen", "adult", "elderly"]:
+        if col not in df.columns:
+            df[col] = 0
+
+    # Tạo các cột với tên giống cấu trúc cũ
+    df["Children"] = df["children"]
+    df["Teen"] = df["teen"]
+    df["Adult"] = df["adult"]
+    df["Elderly"] = df["elderly"]
+
+    # Gộp dữ liệu theo ngày
+    grouped = df.groupby("Date")[["Children", "Teen", "Adult", "Elderly"]].sum().reset_index()
+
+    # Bổ sung các ngày bị thiếu (đến hôm qua)
     if not grouped.empty:
         today = pd.Timestamp.today().normalize()
         yesterday = today - pd.Timedelta(days=1)
@@ -77,9 +97,8 @@ def count_age_group_per_day(customers):
         grouped = grouped.reset_index()
         grouped["Date"] = pd.to_datetime(grouped["Date"])
         grouped = grouped[grouped["Date"] <= yesterday].sort_values("Date").tail(10)
-        grouped = grouped[["Date", "Children", "Teen", "Adult", "Elderly"]]
-        
-    return grouped
+
+    return grouped[["Date", "Children", "Teen", "Adult", "Elderly"]]
 
 def get_sound_history():
     """Lấy tất cả lịch sử sử dụng âm thanh"""
@@ -368,25 +387,22 @@ def display_charts():
 
     with tab2:
         now = time.strftime("%H:%M")
+        today = time.strftime("%d/%m/%Y")
+
         if "last_fetch_tab2" not in st.session_state:
             st.session_state.last_fetch_tab2 = ""
         if "dataCos_tab2" not in st.session_state:
             st.session_state.dataCos_tab2 = []
 
-        # Tự động fetch lúc 23:00
-        if now == "23:00" and st.session_state.last_fetch_tab2 != time.strftime("%d/%m/%Y"):
-            res_pie = requests.get("http://localhost:8000/get-info-customers")
+        # Luôn fetch lần đầu hoặc khi đến 23:00
+        if st.session_state.last_fetch_tab2 != today or now == "23:00":
+            res_pie = requests.get("http://localhost:8000/get-info-age-customers")
             if res_pie.status_code == 200:
-                st.session_state.dataCos_tab2 = res_pie.json().get("customers", [])
-                st.session_state.last_fetch_tab2 = time.strftime("%d/%m/%Y")
+                st.session_state.dataCos_tab2 = res_pie.json().get("age_customers", [])
+                st.session_state.last_fetch_tab2 = today
 
-        # Nếu chưa có thì lấy từ tab1 (cache lại)
-        data_tab2 = st.session_state.get("dataCos_tab2", [])
-        if not data_tab2 and "dataCos_tab1" in st.session_state:
-            data_tab2 = st.session_state["dataCos_tab1"]
-
+        data_tab2 = st.session_state.dataCos_tab2
         df2 = count_total_age_groups(data_tab2)
-        
         if not df2.empty and df2["Count"].sum() > 0:
             total = df2["Count"].sum()
             df2["Percent"] = (df2["Count"] / total * 100).round(2)
@@ -425,14 +441,14 @@ def display_charts():
             st.session_state.dataCos_tab3 = []
         # Tự động cập nhật lúc 23:00
         if now == "23:00" and st.session_state.last_fetch_tab3 != time.strftime("%d/%m/%Y"):
-            res3 = requests.get("http://localhost:8000/get-info-customers")
+            res3 = requests.get("http://localhost:8000/get-info-age-customers")
             if res3.status_code == 200:
-                st.session_state.dataCos_tab3 = res3.json().get("customers", [])
+                st.session_state.dataCos_tab3 = res3.json().get("age_customers", [])
                 st.session_state.last_fetch_tab3 = time.strftime("%d/%m/%Y")
         # Nếu chưa có dữ liệu tab3, lấy từ tab1 (lần fetch đầu tiên)
         data_tab3 = st.session_state.get("dataCos_tab3", [])
-        if not data_tab3 and "dataCos_tab1" in st.session_state:
-            data_tab3 = st.session_state["dataCos_tab1"]
+        if not data_tab3 and "dataCos_tab2" in st.session_state:
+            data_tab3 = st.session_state["dataCos_tab2"]
         df3 = count_age_group_per_day(data_tab3)
         # st.write(df2)
         if not df3.empty:
