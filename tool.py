@@ -288,9 +288,7 @@ def run_model():
         image_base64 = data["image_base64"]  # Lấy chuỗi base64 từ document
         im = base64_to_pil(image_base64)
 
-        im_np = np.array(im)[..., ::-1]
-
-        face_objs = DeepFace.extract_faces(img_path=im_np, enforce_detection=False)
+        face_objs = DeepFace.extract_faces(img_path=np.array(im)[:,:,::-1], enforce_detection=False)
 
         faces = [Image.fromarray((f["face"] * 255).astype(np.uint8)) for f in face_objs]
         
@@ -302,7 +300,6 @@ def run_model():
         batch = torch.empty((0, 3, 224, 224), dtype=torch.float32)
     loader = DataLoader(batch, batch_size=32, shuffle=False)
     
-
     net.eval()
 
     ou = []
@@ -326,7 +323,7 @@ def run_model():
     counts = np.bincount(predicted_class.cpu().numpy(), minlength=len(stat))
     for idx, key in enumerate(stat.keys()):
         stat[key] += int(counts[idx])
-        
+
     store = {"date": start, **stat}
 
     db.collection("analyze").add(store)
