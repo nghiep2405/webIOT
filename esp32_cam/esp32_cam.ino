@@ -15,7 +15,7 @@
 // // Wifi and server
 // const char *ssid = "IPhone";
 // const char *password = "nak050105";
-// const char *postServer = "http://172.20.10.2:8000/upload/";
+const char *postServer = "http://172.20.10.2:8000/upload/";
 
 // // MQTT configuration 
 // const char* mqtt_server = "broker.emqx.io"; // Public MQTT broker 
@@ -133,6 +133,7 @@ void setup() {
   // Accesspoint
   Serial.println("Connected wifiManager");
   WiFiManager wifiManager;
+  wifiManager.resetSettings();
   if(!wifiManager.autoConnect("My Accesspoint")){
     Serial.println("Failed to connect and hit timeout");
     ESP.restart();
