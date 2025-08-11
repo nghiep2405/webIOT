@@ -10,10 +10,11 @@ st.title("Live View")
 left, right = st.columns([2,1], vertical_alignment="top")
 
 with left:
+            # <iframe src="{ESP32_STREAM_URL}" width="680" height="480" />
     st.markdown(
         f"""
         <div style="text-align:center;">
-            <iframe src="{ESP32_STREAM_URL}" width="680" height="480" />
+            <img src="{ESP32_STREAM_URL}" style="width: 100%; height: 100%;"/>
         </div>
         """,
         unsafe_allow_html=True

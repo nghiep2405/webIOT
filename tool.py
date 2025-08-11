@@ -336,7 +336,7 @@ def run_model():
 
     store = {"date": start, **stat}
 
-    db.collection("analyze").add(store)
+    db.collection("customer_classification").add(store)
 
 @app.post("/analyze")
 async def start_analyze():
