@@ -151,7 +151,7 @@ if st.session_state.logged_in:
     left, right = st.columns([15,1], vertical_alignment="top")
     with left:
         with st.container(height=600, border=False):
-            nav.run()
+            nav.run()   
     with right:
         bot1, bot2 = st.columns([1,20], vertical_alignment="bottom")
         bot1.container(height=600, border=False)
